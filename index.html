@@ -1,0 +1,3249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>リード管理ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+    --bg: #F1F5F9; --white: #fff; --navy: #0F172A;
+    --text: #1E293B; --sub: #64748B; --muted: #94A3B8; --border: #E2E8F0;
+    --blue: #2563EB; --blue-bg: #EFF6FF;
+    --green: #10B981; --green-bg: #ECFDF5;
+    --amber: #F59E0B; --amber-bg: #FFFBEB;
+    --red: #EF4444; --red-bg: #FEF2F2;
+    --purple: #8B5CF6; --purple-bg: #F5F3FF;
+    --sw: 220px; --hh: 60px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Hiragino Kaku Gothic ProN','メイリオ',sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sw);background:var(--navy);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:50;}
+.s-logo{height:var(--hh);display:flex;align-items:center;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.s-logo-t{color:#fff;font-size:.95rem;font-weight:900;letter-spacing:.08em;}
+.s-logo-s{color:rgba(255,255,255,.3);font-size:.62rem;margin-top:1px;}
+.s-nav{padding:12px 10px;flex:1;overflow-y:auto;}
+.s-lbl{color:rgba(255,255,255,.25);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;padding:10px 10px 4px;}
+.s-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;color:rgba(255,255,255,.5);font-size:.8rem;cursor:pointer;transition:.15s;margin-bottom:1px;}
+.s-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+.s-item.on{background:rgba(37,99,235,.3);color:#fff;}
+.s-foot{padding:14px;border-top:1px solid rgba(255,255,255,.07);}
+.s-sync{color:rgba(255,255,255,.3);font-size:.68rem;text-align:center;}
+
+/* MAIN */
+.main{margin-left:var(--sw);display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden;}
+
+/* HEADER */
+.header{height:var(--hh);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:40;}
+.h-title{font-size:.92rem;font-weight:900;flex:1;}
+.h-search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;width:220px;}
+.h-search input{border:none;background:transparent;font-size:.8rem;color:var(--text);outline:none;width:100%;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:.8rem;font-weight:bold;cursor:pointer;border:none;transition:.15s;}
+.btn-p{background:var(--blue);color:#fff;}
+.btn-p:hover{background:#1D4ED8;}
+
+/* KPI */
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:18px 24px 0;}
+.kc{background:var(--white);border-radius:12px;padding:16px 18px;border:1px solid var(--border);}
+.kc-l{font-size:.7rem;color:var(--sub);margin-bottom:5px;}
+.kc-n{font-size:1.55rem;font-weight:900;line-height:1;}
+.kc-n small{font-size:.72rem;font-weight:400;color:var(--muted);margin-left:2px;}
+.kc-f{margin-top:5px;font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* FILTERS */
+.filter-area{padding:14px 24px;background:var(--white);border-bottom:1px solid var(--border);margin-top:1px;}
+.filter-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.filter-area>.filter-row:last-of-type{margin-bottom:0;}
+.fl{font-size:.68rem;font-weight:bold;color:var(--sub);white-space:nowrap;min-width:56px;}
+.fp{display:flex;gap:5px;flex-wrap:wrap;}
+.fb{padding:4px 11px;border-radius:100px;border:1px solid var(--border);background:var(--white);font-size:.72rem;cursor:pointer;transition:.15s;font-weight:600;color:var(--sub);}
+.fb:hover{border-color:var(--blue);color:var(--blue);}
+.fb.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.fb.on-green{background:var(--green);color:#fff;border-color:var(--green);}
+.fb.on-amber{background:var(--amber);color:#fff;border-color:var(--amber);}
+.fb.on-red{background:var(--red);color:#fff;border-color:var(--red);}
+.fs{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:.75rem;color:var(--text);cursor:pointer;outline:none;}
+.filter-toggle{display:flex;align-items:center;gap:6px;color:var(--blue);font-size:.75rem;font-weight:bold;cursor:pointer;padding:4px 0;user-select:none;}
+.filter-extra{display:none;padding-top:10px;border-top:1px solid var(--border);margin-top:10px;}
+.filter-extra.open{display:block;}
+.filter-extra-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.fe-group{display:flex;flex-direction:column;gap:5px;}
+.fe-label{font-size:.65rem;font-weight:bold;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.fe-pills{display:flex;gap:4px;flex-wrap:wrap;}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 2px;}
+.af-chip{display:inline-flex;align-items:center;gap:5px;background:var(--blue-bg);border:1px solid #BFDBFE;color:var(--blue);border-radius:100px;padding:2px 10px;font-size:.68rem;font-weight:bold;}
+.af-chip button{border:none;background:none;color:var(--blue);cursor:pointer;font-size:.8rem;line-height:1;padding:0;}
+
+/* TABLE */
+.tw{padding:16px 24px 24px;}
+.tc{background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;}
+.t-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);}
+.t-cnt{font-size:.78rem;color:var(--sub);}
+.t-cnt strong{color:var(--text);}
+.t-hint{font-size:.68rem;color:var(--muted);}
+table{width:100%;min-width:800px;border-collapse:collapse;}
+thead th{text-align:left;padding:9px 14px;font-size:.67rem;font-weight:bold;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:#FAFAFA;white-space:nowrap;cursor:pointer;}
+thead th:hover{color:var(--text);}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#F8FAFC;}
+tbody tr.sel{background:var(--blue-bg);}
+td{padding:11px 14px;vertical-align:middle;}
+.c-main{font-weight:700;font-size:.84rem;}
+.c-sub{font-size:.7rem;color:var(--muted);margin-top:1px;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:100px;font-size:.68rem;font-weight:bold;white-space:nowrap;}
+.b-ac{background:var(--blue-bg);color:var(--blue);}
+.b-ev{background:var(--green-bg);color:var(--green);}
+.b-ex{background:var(--amber-bg);color:#92400E;}
+.p-high{background:#FEE2E2;color:#B91C1C;}
+.p-mid{background:#FEF3C7;color:#92400E;}
+.p-low{background:#F1F5F9;color:var(--sub);}
+.st{display:inline-block;padding:3px 9px;border-radius:6px;font-size:.7rem;font-weight:bold;}
+.s-act{background:#D1FAE5;color:#065F46;}
+.s-pen{background:#FEF3C7;color:#92400E;}
+.s-new{background:#F1F5F9;color:var(--sub);}
+.s-rev{background:#E0E7FF;color:#3730A3;}
+.s-done{background:#E2E8F0;color:#475569;}
+.s-con{background:#FCE7F3;color:#9D174D;}
+.s-wait{background:#FEF9C3;color:#713F12;}
+
+/* AVATAR */
+.av{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:bold;color:#fff;flex-shrink:0;}
+.av-row{display:flex;align-items:center;gap:6px;}
+.av-n{font-size:.8rem;}
+.av-r{font-size:.68rem;color:var(--muted);}
+
+/* DETAIL PANEL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.12);z-index:150;display:none;}
+.overlay.show{display:block;}
+.panel{position:fixed;top:0;right:-440px;bottom:0;width:440px;background:var(--white);border-left:1px solid var(--border);z-index:200;display:flex;flex-direction:column;transition:right .25s cubic-bezier(.4,0,.2,1);box-shadow:-6px 0 24px rgba(0,0,0,.08);}
+.panel.open{right:0;}
+.p-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.p-title{font-size:.9rem;font-weight:900;}
+.p-close{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;color:var(--sub);transition:.15s;}
+.p-close:hover{background:var(--bg);}
+.p-body{flex:1;overflow-y:auto;padding:18px 20px;}
+.p-sec{margin-bottom:22px;}
+.p-sec-t{font-size:.62rem;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.p-row{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;}
+.p-k{width:90px;font-size:.72rem;color:var(--muted);flex-shrink:0;padding-top:1px;}
+.p-v{font-size:.8rem;color:var(--text);font-weight:500;flex:1;}
+.p-memo{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.78rem;color:var(--sub);line-height:1.75;}
+
+/* ANALYTICS VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+.board-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 18px 0;}
+.board-body{padding:16px 24px 24px;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-card{background:white;border-radius:12px;border:1px solid var(--border);padding:20px;}
+.chart-card-title{font-size:.78rem;font-weight:bold;color:var(--text);margin-bottom:16px;}
+.chart-canvas-wrap{position:relative;height:220px;}
+
+/* REPORT VIEW */
+.report-body{padding:18px 24px 24px;}
+.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.report-card{background:white;border-radius:12px;border:1px solid var(--border);padding:20px;}
+.report-card-title{font-size:.75rem;font-weight:bold;color:var(--sub);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em;}
+.report-stat{font-size:2rem;font-weight:900;line-height:1;margin-bottom:4px;}
+.report-sub{font-size:.7rem;color:var(--muted);}
+.report-section-title{font-size:.85rem;font-weight:900;color:var(--text);margin-bottom:12px;margin-top:4px;}
+
+/* ACCEL PIPELINE ANALYSIS */
+.ac-pipeline-section{margin-top:20px;}
+.ac-stage-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px;}
+.ac-stage-card{background:white;border-radius:10px;border:1px solid var(--border);padding:10px 12px;position:relative;cursor:default;transition:.15s;overflow:visible;}
+.ac-stage-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);}
+.ac-stage-card-label{font-size:.65rem;font-weight:700;color:var(--sub);margin-bottom:4px;}
+.ac-stage-card-count{font-size:1.8rem;font-weight:900;line-height:1;margin-bottom:2px;}
+.ac-stage-card-desc{font-size:.6rem;color:var(--muted);}
+.ac-stage-tooltip{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--navy);color:#fff;border-radius:8px;padding:10px 14px;min-width:180px;max-width:260px;font-size:.75rem;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;}
+.ac-stage-tooltip-title{font-weight:700;margin-bottom:6px;font-size:.72rem;opacity:.7;}
+.ac-stage-tooltip li{list-style:none;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ac-stage-tooltip .tooltip-more{color:#94A3B8;font-style:italic;margin-top:4px;}
+.ac-stage-card:hover .ac-stage-tooltip{display:block;}
+
+/* ACCEL GOAL CARDS */
+.ac-goal-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:0;}
+.ac-goal-card{background:white;border-radius:10px;border:1px solid var(--border);padding:10px 14px;}
+.ac-goal-card-label{font-size:.68rem;font-weight:700;color:var(--sub);margin-bottom:4px;}
+.ac-goal-actual{font-size:1.4rem;font-weight:900;line-height:1;margin-bottom:2px;}
+.ac-goal-target-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:.68rem;color:var(--sub);}
+.ac-goal-edit{border:none;background:transparent;font-size:.68rem;color:var(--sub);width:36px;text-align:center;border-bottom:1px dashed var(--border);outline:none;padding:0 2px;}
+.ac-goal-edit:focus{border-bottom-color:var(--blue);color:var(--text);}
+.ac-goal-bar-wrap{background:var(--bg);border-radius:99px;height:5px;overflow:hidden;margin-bottom:3px;}
+.ac-goal-bar{height:5px;border-radius:99px;transition:width .4s;}
+.ac-goal-pct{font-size:.68rem;font-weight:700;}
+
+/* ACCEL RANKING */
+.ac-rank-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.ac-rank-col-title{font-size:.78rem;font-weight:900;color:var(--sub);margin-bottom:6px;padding-left:2px;text-transform:uppercase;letter-spacing:.05em;}
+.ac-rank-card{background:white;border-radius:12px;border:1px solid var(--border);overflow:hidden;}
+.ac-rank-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);}
+.ac-rank-row:last-child{border-bottom:none;}
+.ac-rank-medal{font-size:.9rem;width:22px;flex-shrink:0;text-align:center;}
+.ac-rank-name{flex:1;font-size:.8rem;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ac-rank-count{font-size:1.05rem;font-weight:900;color:var(--blue);flex-shrink:0;}
+.ac-rank-unit{font-size:.65rem;color:var(--muted);margin-left:1px;}
+
+/* ACCEL FUNNEL CSS */
+.ac-funnel-wrap{display:flex;flex-direction:row;height:200px;gap:0;padding:8px 0;}
+.ac-funnel-col{flex:1;position:relative;cursor:default;}
+.ac-funnel-col:hover .ac-funnel-shape{filter:brightness(.92);}
+.ac-funnel-shape{position:absolute;inset:0;transition:.12s;}
+.ac-funnel-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;pointer-events:none;gap:2px;}
+.ac-funnel-label{font-size:.65rem;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);text-align:center;line-height:1.2;}
+.ac-funnel-count{font-size:.95rem;font-weight:900;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+
+/* EXPO FOLLOWUP TABLE */
+.ex-followup-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.ex-followup-table thead th{text-align:left;padding:6px 10px;font-size:.67rem;font-weight:bold;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:#FAFAFA;white-space:nowrap;}
+.ex-followup-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.ex-followup-table tbody tr:last-child{border-bottom:none;}
+.ex-followup-table tbody tr:hover{background:var(--blue-bg);}
+.ex-followup-table td{padding:7px 10px;vertical-align:middle;}
+.ex-days-green{color:#059669;font-weight:700;}
+.ex-days-yellow{color:#D97706;font-weight:700;}
+.ex-days-red{color:#DC2626;font-weight:700;}
+.ex-days-badge{display:inline-block;padding:2px 7px;border-radius:9px;font-size:.7rem;font-weight:700;}
+.ex-days-badge.green{background:#D1FAE5;color:#059669;}
+.ex-days-badge.yellow{background:#FEF3C7;color:#D97706;}
+.ex-days-badge.red{background:#FEE2E2;color:#DC2626;}
+
+/* EXPO PERSON STATUS TABLE */
+.ex-person-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.ex-person-table thead th{text-align:left;padding:6px 10px;font-size:.67rem;font-weight:bold;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:#FAFAFA;}
+.ex-person-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.ex-person-table tbody tr:last-child{border-bottom:none;}
+.ex-person-table tbody tr:hover{background:var(--blue-bg);}
+.ex-person-table td{padding:8px 10px;vertical-align:middle;}
+.ex-person-name{font-weight:700;color:var(--text);}
+.ex-status-pill{display:inline-block;padding:2px 8px;border-radius:9px;font-size:.7rem;font-weight:700;min-width:28px;text-align:center;}
+.ex-status-pill.new{background:#F1F5F9;color:#475569;}
+.ex-status-pill.follow{background:#EFF6FF;color:#2563EB;}
+.ex-status-pill.apo{background:#D1FAE5;color:#059669;}
+
+/* EXPO SCALE CARDS */
+.ex-scale-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
+.ex-scale-cards>*{min-width:0;}
+
+/* DEAL MODAL */
+.deal-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:600;align-items:center;justify-content:center;}
+.deal-modal{background:white;border-radius:16px;padding:20px 24px;width:min(92vw,860px);max-height:75vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.25);}
+.deal-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.deal-modal-title{font-size:.92rem;font-weight:900;}
+.deal-modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);padding:2px 8px;border-radius:6px;transition:.12s;}
+.deal-modal-close:hover{background:var(--bg);color:var(--text);}
+.deal-modal-list{overflow-y:auto;flex:1;}
+.deal-modal-table{width:100%;border-collapse:collapse;}
+.deal-modal-table thead th{text-align:left;padding:7px 12px;font-size:.67rem;font-weight:bold;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:#FAFAFA;white-space:nowrap;position:sticky;top:0;}
+.deal-modal-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.deal-modal-table tbody tr:last-child{border-bottom:none;}
+.deal-modal-table tbody tr:hover{background:var(--blue-bg);}
+.deal-modal-table td{padding:9px 12px;vertical-align:middle;}
+.deal-modal-empty{color:var(--muted);font-size:.82rem;text-align:center;padding:20px;}
+
+/* MONTHLY 3-COL */
+.ac-monthly-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+
+/* COMPACT ACCEL LAYOUT */
+.ac-compact-body{padding:10px 18px 14px;overflow-x:hidden;}
+.ac-charts-2x2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+/* グリッド子要素がコンテナ幅を超えないようmin-width:0を全グリッドに適用 */
+.ac-charts-2x2 > *,.ac-goal-cards > *,.ac-monthly-3col > *{min-width:0;overflow:hidden;}
+.ac-rank-3col > *,.ac-stage-cards > *{min-width:0;}
+.ac-sm-card{padding:10px 12px!important;}
+.ac-section-label{font-size:.75rem;font-weight:900;color:var(--text);margin-bottom:5px;}
+#view-accel .kc{padding:10px 14px;}
+#view-accel .kc-n{font-size:1.25rem;}
+#view-accel .board-kpi{gap:8px;}
+#view-accel .board-kpi > *{min-width:0;}
+.ac-pipeline-section{margin-top:0;}
+/* ランキング各パネルを小さく */
+.ac-rank-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.ac-rank-col-title{font-size:.7rem;font-weight:900;color:var(--text);margin-bottom:5px;padding-left:2px;}
+/* canvasが親を超えないよう制限 */
+#view-accel canvas{max-width:100%;}
+
+/* ALERT LIST */
+.alert-subsection{background:white;border-radius:12px;border:1px solid var(--border);padding:16px 20px;margin-bottom:10px;}
+.alert-sub-title{font-size:.78rem;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.alert-badge{display:inline-block;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:99px;line-height:1.6;}
+.alert-badge.danger{background:#FEE2E2;color:#B91C1C;}
+.alert-badge.warn{background:#FEF3C7;color:#92400E;}
+.alert-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.alert-row:last-child{border-bottom:none;}
+.alert-row:hover{background:var(--bg);}
+.alert-row-name{flex:1;font-size:.82rem;font-weight:600;color:var(--text);}
+.alert-row-person{font-size:.75rem;color:var(--sub);}
+.alert-row-days{font-size:.78rem;font-weight:700;min-width:70px;text-align:right;}
+.alert-empty{font-size:.78rem;color:var(--muted);padding:8px 0;}
+
+/* CONVERSION RATE CARDS */
+.conv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.conv-card{background:white;border-radius:12px;border:1px solid var(--border);padding:20px;}
+.conv-card-title{font-size:.75rem;font-weight:bold;color:var(--sub);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em;}
+.conv-rate{font-size:2rem;font-weight:900;line-height:1;margin-bottom:8px;}
+.conv-bar-wrap{background:#F1F5F9;border-radius:99px;height:8px;overflow:hidden;margin-bottom:4px;}
+.conv-bar{height:8px;border-radius:99px;transition:width .4s;}
+.conv-sub{font-size:.7rem;color:var(--muted);}
+
+/* STALE LEADS */
+.stale-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.stale-row:last-child{border-bottom:none;}
+.stale-row:hover{background:var(--bg);}
+.stale-ok{font-size:.78rem;color:var(--green);padding:8px 0;display:flex;align-items:center;gap:6px;}
+
+/* PLACEHOLDER VIEW */
+.placeholder-body{padding:60px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.placeholder-icon{font-size:3rem;margin-bottom:16px;}
+.placeholder-title{font-size:1rem;font-weight:900;color:var(--text);margin-bottom:8px;}
+.placeholder-sub{font-size:.8rem;color:var(--muted);}
+
+/* ADD MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto;}
+.modal-bg.show{display:flex;}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:620px;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.18);margin:auto;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.modal-title{font-size:.95rem;font-weight:900;}
+.modal-body{padding:20px 22px;overflow-y:auto;max-height:70vh;}
+.modal-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--border);}
+.src-tabs{display:flex;gap:6px;margin-top:6px;}
+.src-tab{padding:6px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:.78rem;font-weight:bold;cursor:pointer;color:var(--sub);transition:.15s;}
+.src-tab:hover{border-color:var(--blue);color:var(--blue);}
+.src-tab.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.src-tab.on-expo{background:#D97706;color:#fff;border-color:#D97706;}
+.src-tab.on-event{background:var(--green);color:#fff;border-color:var(--green);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:4px;}
+.form-grid.full{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.span2{grid-column:span 2;}
+.form-label{font-size:.68rem;font-weight:bold;color:var(--sub);letter-spacing:.06em;text-transform:uppercase;}
+.form-label span{color:var(--red);margin-left:2px;}
+.form-input{padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;color:var(--text);outline:none;transition:.15s;background:#fff;font-family:inherit;}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.form-input.err{border-color:var(--red);}
+select.form-input{cursor:pointer;}
+textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
+.form-sec{margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);font-size:.7rem;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.btn-cancel{padding:7px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:.8rem;font-weight:bold;color:var(--sub);cursor:pointer;transition:.15s;}
+.btn-cancel:hover{border-color:var(--text);color:var(--text);}
+
+/* CARD IMAGE UPLOAD */
+.card-upload{border:2px dashed var(--border);border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;transition:.15s;background:var(--bg);}
+.card-upload:hover,.card-upload.drag{border-color:var(--blue);background:var(--blue-bg);}
+.card-upload input{display:none;}
+.card-upload-icon{font-size:1.6rem;margin-bottom:6px;}
+.card-upload-txt{font-size:.75rem;color:var(--muted);line-height:1.5;}
+.card-upload-txt strong{color:var(--blue);}
+.card-preview-wrap{margin-top:10px;display:none;position:relative;}
+.card-preview-wrap.show{display:block;}
+.card-preview-wrap img{width:100%;border-radius:8px;border:1px solid var(--border);display:block;}
+.card-preview-clear{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;line-height:1;}
+
+/* CARD IMAGE IN PANEL */
+.card-img-panel{border-radius:10px;overflow:hidden;border:1px solid var(--border);cursor:zoom-in;}
+.card-img-panel img{width:100%;display:block;transition:.15s;}
+.card-img-panel img:hover{opacity:.88;}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:center;justify-content:center;cursor:zoom-out;}
+.lightbox.show{display:flex;}
+.lightbox img{max-width:90vw;max-height:88vh;border-radius:10px;box-shadow:0 8px 48px rgba(0,0,0,.5);}
+.lightbox-close{position:fixed;top:18px;right:22px;color:#fff;font-size:1.6rem;background:none;border:none;cursor:pointer;opacity:.7;line-height:1;}
+.lightbox-close:hover{opacity:1;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;opacity:0;transform:translateY(8px);transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.toast-error{background:#dc2626;}
+
+/* OVERLAY FADE */
+.overlay.show{animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* TABLE SCROLL */
+.tc-scroll{overflow-x:auto;}
+
+/* AMBER BUTTON CONTRAST */
+.btn-amber{background:var(--amber);color:#78350f;}
+
+/* TRANSITION UNIFICATION */
+.btn,.fb,.fs,.s-item,.p-close,.src-tab{transition:all .15s ease;}
+</style>
+</head>
+<body>
+<div style="display:flex;min-height:100vh;">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="s-logo"><div><div class="s-logo-t">Lead Hub</div><div class="s-logo-s">統合リード管理</div></div></div>
+    <nav class="s-nav">
+        <div class="s-lbl">ビュー</div>
+        <div class="s-item on" role="button" tabindex="0" onclick="switchView('list',this)" onkeydown="if(event.key==='Enter'||event.key===' ')switchView('list',this)">全リード一覧</div>
+        <div class="s-item" role="button" tabindex="0" onclick="switchView('accel',this)" onkeydown="if(event.key==='Enter'||event.key===' ')switchView('accel',this)">アクセラ</div>
+        <div class="s-item" role="button" tabindex="0" onclick="switchView('expo',this)" onkeydown="if(event.key==='Enter'||event.key===' ')switchView('expo',this)">展示会</div>
+        <div class="s-item" role="button" tabindex="0" onclick="switchView('event',this)" onkeydown="if(event.key==='Enter'||event.key===' ')switchView('event',this)">イベント</div>
+        <div class="s-lbl">分析</div>
+        <div class="s-item" role="button" tabindex="0" onclick="switchView('report',this)" onkeydown="if(event.key==='Enter'||event.key===' ')switchView('report',this)">レポート</div>
+        <div class="s-item" role="button" tabindex="0" onclick="switchView('calendar',this)" onkeydown="if(event.key==='Enter'||event.key===' ')switchView('calendar',this)">〆切カレンダー</div>
+    </nav>
+    <div class="s-foot"><div class="s-sync"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10B981;margin-right:5px;vertical-align:middle;"></span>ローカル保存中（Lark連携準備中）</div></div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+<header class="header">
+    <div class="h-title" id="pageTitle">全リード一覧</div>
+    <div class="h-search" id="searchBox"><span style="color:var(--muted);font-size:.85rem;">&#x1F50D;</span><input type="text" placeholder="企業名・担当者・氏名で検索..." id="q" oninput="render()"></div>
+    <button class="btn btn-p" onclick="openAddModal()">＋ 追加</button>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: 全リード一覧
+════════════════════════════════════════════════ -->
+<div id="view-list" class="view active">
+
+<!-- KPI -->
+<div class="kpi" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kc" style="border-top:3px solid var(--blue)"><div class="kc-l">総リード数</div><div class="kc-n" id="k0">—<small>件</small></div><div class="kc-f"><div class="dot" style="background:var(--blue)"></div>全ソース合計</div></div>
+    <div class="kc"><div class="kc-l">アクセラ案件</div><div class="kc-n" id="k1">—<small>件</small></div><div class="kc-f"><div class="dot" style="background:var(--blue)"></div>応募中・審査中</div></div>
+    <div class="kc"><div class="kc-l">展示会リード</div><div class="kc-n" id="k2">—<small>件</small></div><div class="kc-f"><div class="dot" style="background:var(--amber)"></div>フォロー進捗あり</div></div>
+    <div class="kc"><div class="kc-l">イベント獲得</div><div class="kc-n" id="k3">—<small>件</small></div><div class="kc-f"><div class="dot" style="background:var(--green)"></div>名刺・コンタクト</div></div>
+    <div class="kc"><div class="kc-l">高優先度</div><div class="kc-n" id="k4" style="color:var(--red)">—<small>件</small></div><div class="kc-f"><div class="dot" style="background:var(--red)"></div>要対応</div></div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-area" style="margin-top:16px;">
+    <div class="filter-row">
+        <div class="fl">ソース<div style="font-size:.58rem;color:var(--muted);font-weight:400;margin-top:1px;">複数選択可</div></div>
+        <div class="fp" id="f-source">
+            <button class="fb" data-v="accel" onclick="toggleSource(this)">アクセラ</button>
+            <button class="fb" data-v="expo" onclick="toggleSource(this)">展示会</button>
+            <button class="fb" data-v="event" onclick="toggleSource(this)">イベント</button>
+        </div>
+    </div>
+    <div class="filter-row">
+        <div class="fl">優先度<div style="font-size:.58rem;color:var(--muted);font-weight:400;margin-top:1px;">複数選択可</div></div>
+        <div class="fp" id="f-prio">
+            <button class="fb" data-v="高" onclick="togglePrio(this)">高</button>
+            <button class="fb" data-v="中" onclick="togglePrio(this)">中</button>
+            <button class="fb" data-v="低" onclick="togglePrio(this)">低</button>
+        </div>
+    </div>
+    <div class="filter-row" id="f-status-row">
+        <div class="fl">ステータス<div style="font-size:.58rem;color:var(--muted);font-weight:400;margin-top:1px;">複数選択可</div></div>
+        <div class="fp" id="f-status">
+            <!-- 動的生成 -->
+        </div>
+    </div>
+    <div class="filter-row">
+        <div class="fl">担当者<div style="font-size:.58rem;color:var(--muted);font-weight:400;margin-top:1px;">複数選択可</div></div>
+        <div class="fp" id="f-person">
+            <button class="fb on" data-v="all" onclick="setF('person',this)">すべて</button>
+            <button class="fb" data-v="田中" onclick="setF('person',this)">田中</button>
+            <button class="fb" data-v="鈴木" onclick="setF('person',this)">鈴木</button>
+            <button class="fb" data-v="佐藤" onclick="setF('person',this)">佐藤</button>
+            <button class="fb" data-v="山田" onclick="setF('person',this)">山田</button>
+        </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div class="filter-toggle" role="button" tabindex="0" onclick="toggleExtra()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleExtra()">
+            <span id="extraIcon">＋</span> <span>詳細フィルター（展示会・アクセラ専用）</span>
+        </div>
+        <button class="fb" id="resetAllBtn" onclick="resetAllFilters()" style="border-color:var(--red);color:var(--red);font-size:.72rem;">リセット</button>
+    </div>
+    <div class="filter-extra" id="filterExtra">
+        <!-- アクセラ専用フィルター -->
+        <div id="detail-accel" style="display:none">
+            <div style="font-size:.65rem;font-weight:bold;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">アクセラ専用</div>
+            <div class="filter-extra-grid">
+                <div class="fe-group">
+                    <div class="fe-label">ステージ</div>
+                    <div class="fe-pills" id="f-stage">
+                        <button class="fb on" data-v="all" onclick="setF('stage',this)">すべて</button>
+                        <button class="fb" data-v="リード" onclick="setF('stage',this)">リード</button>
+                        <button class="fb" data-v="接触済" onclick="setF('stage',this)">接触済</button>
+                        <button class="fb" data-v="提出済" onclick="setF('stage',this)">提出済</button>
+                        <button class="fb" data-v="商談化" onclick="setF('stage',this)">商談化</button>
+                        <button class="fb" data-v="採択！！" onclick="setF('stage',this)">採択！！</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">フェーズ</div>
+                    <div class="fe-pills" id="f-phase">
+                        <button class="fb on" data-v="all" onclick="setF('phase',this)">すべて</button>
+                        <button class="fb" data-v="案件評価" onclick="setF('phase',this)">案件評価</button>
+                        <button class="fb" data-v="方針設計" onclick="setF('phase',this)">方針設計</button>
+                        <button class="fb" data-v="情報設計・作成" onclick="setF('phase',this)">情報設計・作成</button>
+                        <button class="fb" data-v="情報設計・レビュー" onclick="setF('phase',this)">情報設計・レビュー</button>
+                        <button class="fb" data-v="スライド・作成" onclick="setF('phase',this)">スライド・作成</button>
+                        <button class="fb" data-v="スライド・レビュー" onclick="setF('phase',this)">スライド・レビュー</button>
+                        <button class="fb" data-v="修正・提出" onclick="setF('phase',this)">修正・提出</button>
+                        <button class="fb" data-v="提出済" onclick="setF('phase',this)">提出済</button>
+                        <button class="fb" data-v="商談化" onclick="setF('phase',this)">商談化</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">Quarter</div>
+                    <div class="fe-pills" id="f-quarter">
+                        <button class="fb on" data-v="all" onclick="setF('quarter',this)">すべて</button>
+                        <button class="fb" data-v="Q1" onclick="setF('quarter',this)">Q1</button>
+                        <button class="fb" data-v="Q2" onclick="setF('quarter',this)">Q2</button>
+                        <button class="fb" data-v="Q3" onclick="setF('quarter',this)">Q3</button>
+                        <button class="fb" data-v="Q4" onclick="setF('quarter',this)">Q4</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 展示会専用フィルター -->
+        <div id="detail-expo" style="display:none">
+            <div style="font-size:.65rem;font-weight:bold;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;margin-top:10px;">展示会専用</div>
+            <div class="filter-extra-grid">
+                <div class="fe-group">
+                    <div class="fe-label">展示会名</div>
+                    <div class="fe-pills" id="f-expo">
+                        <button class="fb on" data-v="all" onclick="setF('expo',this)">すべて</button>
+                        <button class="fb" data-v="Startup Japan 2025 大阪" onclick="setF('expo',this)">Startup Japan 2025 大阪</button>
+                        <button class="fb" data-v="新技術創出交流会2024" onclick="setF('expo',this)">新技術創出交流会2024</button>
+                        <button class="fb" data-v="Startup Japan EXPO 2024秋" onclick="setF('expo',this)">Startup Japan EXPO 2024秋</button>
+                        <button class="fb" data-v="TOKYO DIGICONX 2024" onclick="setF('expo',this)">TOKYO DIGICONX 2024</button>
+                        <button class="fb" data-v="ASCII 2025" onclick="setF('expo',this)">ASCII 2025</button>
+                        <button class="fb" data-v="Startup Japan 2025" onclick="setF('expo',this)">Startup Japan 2025</button>
+                        <button class="fb" data-v="InterropTokyo" onclick="setF('expo',this)">InterropTokyo</button>
+                        <button class="fb" data-v="産業DX総合展2025夏" onclick="setF('expo',this)">産業DX総合展2025夏</button>
+                        <button class="fb" data-v="Factory Innovation Week 2025" onclick="setF('expo',this)">Factory Innovation Week 2025</button>
+                        <button class="fb" data-v="CEATEC 2025" onclick="setF('expo',this)">CEATEC 2025</button>
+                        <button class="fb" data-v="新技術創出交流会2025" onclick="setF('expo',this)">新技術創出交流会2025</button>
+                        <button class="fb" data-v="トライアングル愛媛2025共創会" onclick="setF('expo',this)">トライアングル愛媛2025共創会</button>
+                        <button class="fb" data-v="ILS2025" onclick="setF('expo',this)">ILS2025</button>
+                        <button class="fb" data-v="スマートファクトリー" onclick="setF('expo',this)">スマートファクトリー</button>
+                        <button class="fb" data-v="スマートファクトリー2025" onclick="setF('expo',this)">スマートファクトリー2025</button>
+                        <button class="fb" data-v="たま未来産業フェア" onclick="setF('expo',this)">たま未来産業フェア</button>
+                        <button class="fb" data-v="Eight EXPO 2026 Spring" onclick="setF('expo',this)">Eight EXPO 2026 Spring</button>
+                        <button class="fb" data-v="新居浜DX Labo" onclick="setF('expo',this)">新居浜DX Labo</button>
+                        <button class="fb" data-v="Startup Japan 2026" onclick="setF('expo',this)">Startup Japan 2026</button>
+                        <button class="fb" data-v="画像センシング展 2026" onclick="setF('expo',this)">画像センシング展 2026</button>
+                        <button class="fb" data-v="Japan IT Week" onclick="setF('expo',this)">Japan IT Week</button>
+                        <button class="fb" data-v="製造業展示会" onclick="setF('expo',this)">製造業展示会</button>
+                        <button class="fb" data-v="マーケティングEXPO" onclick="setF('expo',this)">マーケティングEXPO</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">業種</div>
+                    <div class="fe-pills" id="f-industry">
+                        <button class="fb on" data-v="all" onclick="setF('industry',this)">すべて</button>
+                        <button class="fb" data-v="製造業" onclick="setF('industry',this)">製造業</button>
+                        <button class="fb" data-v="医療" onclick="setF('industry',this)">医療</button>
+                        <button class="fb" data-v="金融" onclick="setF('industry',this)">金融</button>
+                        <button class="fb" data-v="物流" onclick="setF('industry',this)">物流</button>
+                        <button class="fb" data-v="IT" onclick="setF('industry',this)">IT</button>
+                        <button class="fb" data-v="IT・SaaS" onclick="setF('industry',this)">IT・SaaS</button>
+                        <button class="fb" data-v="行政" onclick="setF('industry',this)">行政</button>
+                        <button class="fb" data-v="教育" onclick="setF('industry',this)">教育</button>
+                        <button class="fb" data-v="セキュリティ" onclick="setF('industry',this)">セキュリティ</button>
+                        <button class="fb" data-v="小売" onclick="setF('industry',this)">小売</button>
+                        <button class="fb" data-v="広告" onclick="setF('industry',this)">広告</button>
+                        <button class="fb" data-v="エンタメ" onclick="setF('industry',this)">エンタメ</button>
+                        <button class="fb" data-v="インフラ" onclick="setF('industry',this)">インフラ</button>
+                        <button class="fb" data-v="商社" onclick="setF('industry',this)">商社</button>
+                        <button class="fb" data-v="商社・貿易" onclick="setF('industry',this)">商社・貿易</button>
+                        <button class="fb" data-v="コンサル" onclick="setF('industry',this)">コンサル</button>
+                        <button class="fb" data-v="建設" onclick="setF('industry',this)">建設</button>
+                        <button class="fb" data-v="デザイン・設計" onclick="setF('industry',this)">デザイン・設計</button>
+                        <button class="fb" data-v="不動産" onclick="setF('industry',this)">不動産</button>
+                        <button class="fb" data-v="マスコミ" onclick="setF('industry',this)">マスコミ</button>
+                        <button class="fb" data-v="クリエイティブ" onclick="setF('industry',this)">クリエイティブ</button>
+                        <button class="fb" data-v="リサーチ" onclick="setF('industry',this)">リサーチ</button>
+                        <button class="fb" data-v="メディア" onclick="setF('industry',this)">メディア</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">規模</div>
+                    <div class="fe-pills" id="f-scale">
+                        <button class="fb on" data-v="all" onclick="setF('scale',this)">すべて</button>
+                        <button class="fb" data-v="大規模" onclick="setF('scale',this)">大規模</button>
+                        <button class="fb" data-v="中規模" onclick="setF('scale',this)">中規模</button>
+                        <button class="fb" data-v="小規模" onclick="setF('scale',this)">小規模</button>
+                        <button class="fb" data-v="スタートアップ" onclick="setF('scale',this)">スタートアップ</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">導入時期</div>
+                    <div class="fe-pills" id="f-timing">
+                        <button class="fb on" data-v="all" onclick="setF('timing',this)">すべて</button>
+                        <button class="fb" data-v="即時" onclick="setF('timing',this)">即時</button>
+                        <button class="fb" data-v="すでに導入を検討している" onclick="setF('timing',this)">検討中</button>
+                        <button class="fb" data-v="3ヶ月以内" onclick="setF('timing',this)">3ヶ月以内</button>
+                        <button class="fb" data-v="6ヶ月以内" onclick="setF('timing',this)">6ヶ月以内</button>
+                        <button class="fb" data-v="一年以内" onclick="setF('timing',this)">一年以内</button>
+                        <button class="fb" data-v="未定" onclick="setF('timing',this)">未定</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">フォロー状況（独立選択）</div>
+                    <div class="fe-pills" id="f-follow">
+                        <button class="fb on" data-v="all" onclick="setF('follow',this)">すべて</button>
+                        <button class="fb" data-v="リード" onclick="setF('follow',this)">リード</button>
+                        <button class="fb" data-v="送付済み" onclick="setF('follow',this)">送付済み</button>
+                        <button class="fb" data-v="返信あり" onclick="setF('follow',this)">返信あり</button>
+                        <button class="fb" data-v="アポ取得" onclick="setF('follow',this)">アポ取得</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">決裁権</div>
+                    <div class="fe-pills" id="f-decision">
+                        <button class="fb on" data-v="all" onclick="setF('decision',this)">すべて</button>
+                        <button class="fb" data-v="責任者" onclick="setF('decision',this)">責任者</button>
+                        <button class="fb" data-v="推進リーダー" onclick="setF('decision',this)">推進リーダー</button>
+                        <button class="fb" data-v="担当者" onclick="setF('decision',this)">担当者</button>
+                        <button class="fb" data-v="利用者" onclick="setF('decision',this)">利用者</button>
+                        <button class="fb" data-v="導入支援者" onclick="setF('decision',this)">導入支援者</button>
+                        <button class="fb" data-v="あり" onclick="setF('decision',this)">あり（旧）</button>
+                        <button class="fb" data-v="なし" onclick="setF('decision',this)">なし（旧）</button>
+                        <button class="fb" data-v="不明" onclick="setF('decision',this)">不明</button>
+                    </div>
+                </div>
+                <div class="fe-group">
+                    <div class="fe-label">予算規模</div>
+                    <div class="fe-pills" id="f-budget">
+                        <button class="fb on" data-v="all" onclick="setF('budget',this)">すべて</button>
+                        <button class="fb" data-v="〜100万円" onclick="setF('budget',this)">〜100万円</button>
+                        <button class="fb" data-v="〜100万" onclick="setF('budget',this)">〜100万</button>
+                        <button class="fb" data-v="100万円〜200万円" onclick="setF('budget',this)">100〜200万円</button>
+                        <button class="fb" data-v="200万円〜500万円" onclick="setF('budget',this)">200〜500万円</button>
+                        <button class="fb" data-v="100〜500万" onclick="setF('budget',this)">100〜500万</button>
+                        <button class="fb" data-v="500万円〜1000万円" onclick="setF('budget',this)">500〜1000万円</button>
+                        <button class="fb" data-v="500万〜" onclick="setF('budget',this)">500万〜</button>
+                        <button class="fb" data-v="1000万円〜" onclick="setF('budget',this)">1000万円〜</button>
+                        <button class="fb" data-v="未確認" onclick="setF('budget',this)">未確認</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- アクセラ・展示会どちらも選択されていない場合のメッセージ -->
+        <div id="detail-none" style="color:var(--muted);font-size:.75rem;padding:8px 0;">ソースから「アクセラ」または「展示会」を選択すると詳細フィルターが表示されます</div>
+    </div>
+
+    <div class="active-filters" id="activeChips"></div>
+</div>
+
+<!-- TABLE -->
+<div class="tw">
+<div class="tc">
+    <div class="t-bar">
+        <div class="t-cnt">表示中：<strong id="cnt">0</strong> 件</div>
+        <div style="display:flex;align-items:center;gap:16px;">
+            <div style="font-size:.68rem;color:var(--muted);">最終同期: <span id="lastSync">—</span></div>
+            <div class="t-hint">行をクリックで詳細表示</div>
+        </div>
+    </div>
+    <div class="tc-scroll">
+    <table>
+        <thead id="thead"><tr>
+            <th onclick="setSort('name')">企業名 <span id="sh-name"></span></th>
+            <th>ソース</th>
+            <th onclick="setSort('prio')">優先度 <span id="sh-prio"></span></th>
+            <th>ステータス</th>
+            <th onclick="setSort('person')">担当者 <span id="sh-person"></span></th>
+            <th onclick="setSort('date')">〆切 <span id="sh-date"></span></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+    </table>
+    </div><!-- /tc-scroll -->
+    <!-- ページネーション -->
+    <div id="paginationBar" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 18px;border-top:1px solid var(--border);">
+        <button class="fb" id="prevPageBtn" onclick="changePage(-1)">← 前へ</button>
+        <span id="pageInfo" style="font-size:.78rem;color:var(--sub);">1 / 1 ページ</span>
+        <button class="fb" id="nextPageBtn" onclick="changePage(1)">次へ →</button>
+    </div>
+</div><!-- /tc -->
+</div><!-- /tw -->
+</div><!-- /view-list -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: アクセラ ボード
+════════════════════════════════════════════════ -->
+<div id="view-accel" class="view">
+    <div class="board-kpi">
+        <div class="kc" style="border-top:3px solid var(--blue);cursor:pointer" onclick="showDealModal('アクセラ 全案件', window._acKpiDeals&&window._acKpiDeals.all)">
+            <div class="kc-l">総件数</div>
+            <div class="kc-n" id="ac-k0">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--blue)"></div>アクセラ全案件</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('進行中', window._acKpiDeals&&window._acKpiDeals.inProgress)">
+            <div class="kc-l">進行中</div>
+            <div class="kc-n" id="ac-k1">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--amber)"></div>応募中・審査中・準備中</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('採択済み', window._acKpiDeals&&window._acKpiDeals.adopted)">
+            <div class="kc-l">採択率</div>
+            <div class="kc-n" id="ac-k2" style="color:var(--green)">—<small>%</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--green)"></div><span id="ac-k2-sub">採択件数 / 総件数</span></div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('今月〆切', window._acKpiDeals&&window._acKpiDeals.thisMonth)">
+            <div class="kc-l">今月〆切</div>
+            <div class="kc-n" id="ac-k3" style="color:var(--red)">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--red)"></div><span id="ac-k3-label">今月</span></div>
+        </div>
+    </div>
+    <div class="board-body ac-compact-body">
+        <!-- 4チャート (2×2) -->
+        <div class="ac-charts-2x2">
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">案件状態</div>
+                <div class="chart-canvas-wrap" style="height:160px"><canvas id="ch-accel-status"></canvas></div>
+            </div>
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">ステージ分布</div>
+                <div class="chart-canvas-wrap" style="height:160px"><canvas id="ch-accel-stage"></canvas></div>
+            </div>
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">担当者別件数</div>
+                <div class="chart-canvas-wrap" style="height:160px"><canvas id="ch-accel-person"></canvas></div>
+            </div>
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">優先度別件数</div>
+                <div class="chart-canvas-wrap" style="height:160px"><canvas id="ch-accel-prio"></canvas></div>
+            </div>
+        </div>
+        <!-- パイプライン分析 -->
+        <div class="ac-section-label" style="margin-top:10px">パイプライン分析</div>
+        <div id="ac-stage-cards" class="ac-stage-cards"></div>
+        <div class="chart-card ac-sm-card" style="margin-top:6px">
+            <div id="ac-funnel-visual" class="ac-funnel-wrap"></div>
+        </div>
+        <!-- 年間目標 vs 実績 -->
+        <div class="ac-section-label" style="margin-top:10px">年間目標 vs 実績</div>
+        <div id="ac-goal-cards" class="ac-goal-cards"></div>
+        <!-- 担当者ランキング -->
+        <div class="ac-section-label" style="margin-top:10px">担当者ランキング</div>
+        <div id="ac-ranking-wrap"></div>
+        <!-- 月次トレンド -->
+        <div class="ac-section-label" style="margin-top:10px">月次トレンド</div>
+        <div class="ac-monthly-3col">
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">応募件数</div>
+                <div class="chart-canvas-wrap" style="height:150px"><canvas id="ch-accel-m-apply"></canvas></div>
+            </div>
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">商談化件数</div>
+                <div class="chart-canvas-wrap" style="height:150px"><canvas id="ch-accel-m-deal"></canvas></div>
+            </div>
+            <div class="chart-card ac-sm-card">
+                <div class="chart-card-title">受注件数</div>
+                <div class="chart-canvas-wrap" style="height:150px"><canvas id="ch-accel-m-adopt"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div><!-- /view-accel -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: 展示会 ボード
+════════════════════════════════════════════════ -->
+<div id="view-expo" class="view">
+    <div class="board-kpi">
+        <div class="kc" style="border-top:3px solid var(--amber);cursor:pointer" onclick="showDealModal('展示会 全リード', window._exKpiDeals&&window._exKpiDeals.all)">
+            <div class="kc-l">総リード数</div>
+            <div class="kc-n" id="ex-k0">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--amber)"></div>展示会全リード</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('アポ取得', window._exKpiDeals&&window._exKpiDeals.apo)">
+            <div class="kc-l">アポ取得率</div>
+            <div class="kc-n" id="ex-k1" style="color:var(--green)">—<small>%</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--green)"></div><span id="ex-k1-sub">アポ取得 / 全リード</span></div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('フォロー中', window._exKpiDeals&&window._exKpiDeals.follow)">
+            <div class="kc-l">フォロー中</div>
+            <div class="kc-n" id="ex-k2" style="color:var(--blue)">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--blue)"></div>継続対応中</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('未着手（新規）', window._exKpiDeals&&window._exKpiDeals.newLead)">
+            <div class="kc-l">未着手</div>
+            <div class="kc-n" id="ex-k3" style="color:var(--red)">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--red)"></div>新規・未対応</div>
+        </div>
+    </div>
+    <div class="board-body" style="overflow-x:hidden">
+        <div class="ac-section-label" style="margin-bottom:5px">規模別件数</div>
+        <div id="ex-scale-cards" class="ex-scale-cards"></div>
+        <div class="ac-section-label" style="margin-bottom:5px;margin-top:10px">フォロー経過日数</div>
+        <div class="chart-card ac-sm-card" style="margin-bottom:8px">
+            <div id="ex-followup-wrap"></div>
+        </div>
+        <div class="ac-section-label" style="margin-bottom:5px">担当者別フォロー状況</div>
+        <div class="chart-card ac-sm-card" style="margin-bottom:8px">
+            <div id="ex-person-wrap"></div>
+        </div>
+        <div class="charts-grid" style="margin-top:8px">
+            <div class="chart-card">
+                <div class="chart-card-title">展示会別リード件数</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-expo-name"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-title">フォロー進捗（ファネル）</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-expo-follow"></canvas></div>
+            </div>
+            <div class="chart-card" style="grid-column:1/-1">
+                <div class="chart-card-title">業種分布</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-expo-industry"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div><!-- /view-expo -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: イベント ボード
+════════════════════════════════════════════════ -->
+<div id="view-event" class="view">
+    <div class="board-kpi">
+        <div class="kc" style="border-top:3px solid var(--green);cursor:pointer" onclick="showDealModal('イベント 全件', window._evKpiDeals&&window._evKpiDeals.all)">
+            <div class="kc-l">総件数</div>
+            <div class="kc-n" id="ev-k0">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--green)"></div>イベント全コンタクト</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('対応済み（完了）', window._evKpiDeals&&window._evKpiDeals.done)">
+            <div class="kc-l">対応済み</div>
+            <div class="kc-n" id="ev-k1" style="color:var(--green)">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--green)"></div>フォロー完了</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('フォロー中', window._evKpiDeals&&window._evKpiDeals.follow)">
+            <div class="kc-l">フォロー中</div>
+            <div class="kc-n" id="ev-k2" style="color:var(--blue)">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--blue)"></div>継続対応中</div>
+        </div>
+        <div class="kc" style="cursor:pointer" onclick="showDealModal('新規（未着手）', window._evKpiDeals&&window._evKpiDeals.newL)">
+            <div class="kc-l">新規</div>
+            <div class="kc-n" id="ev-k3" style="color:var(--muted)">—<small>件</small></div>
+            <div class="kc-f"><div class="dot" style="background:var(--muted)"></div>未着手</div>
+        </div>
+    </div>
+    <div class="board-body">
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-card-title">ステータス分布</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-event-status"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-title">担当者別件数（優先度別）</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-event-person"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-title">優先度別件数</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-event-prio"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-title">フォロー進捗</div>
+                <div class="chart-canvas-wrap"><canvas id="ch-event-follow"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div><!-- /view-event -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: レポート
+════════════════════════════════════════════════ -->
+<div id="view-report" class="view">
+    <div class="filter-area" style="padding:12px 24px;">
+        <div class="filter-row">
+            <span class="fl">年度</span>
+            <div class="fp" id="rp-fy-pills">
+                <button class="fb on" data-v="all" onclick="setRpFilter('fy',this)">すべて</button>
+                <button class="fb" data-v="2025" onclick="setRpFilter('fy',this)">FY2025</button>
+                <button class="fb" data-v="2026" onclick="setRpFilter('fy',this)">FY2026</button>
+            </div>
+        </div>
+        <div class="filter-row">
+            <span class="fl">四半期</span>
+            <div class="fp" id="rp-q-pills">
+                <button class="fb on" data-v="all" onclick="setRpFilter('quarter',this)">すべて</button>
+                <button class="fb" data-v="Q1" onclick="setRpFilter('quarter',this)">Q1（1-3月）</button>
+                <button class="fb" data-v="Q2" onclick="setRpFilter('quarter',this)">Q2（4-6月）</button>
+                <button class="fb" data-v="Q3" onclick="setRpFilter('quarter',this)">Q3（7-9月）</button>
+                <button class="fb" data-v="Q4" onclick="setRpFilter('quarter',this)">Q4（10-12月）</button>
+            </div>
+        </div>
+    </div>
+    <div class="report-body">
+        <div class="report-section-title">全体サマリー</div>
+        <div class="report-grid">
+            <div class="report-card" style="border-top:3px solid var(--blue)">
+                <div class="report-card-title">総リード数</div>
+                <div class="report-stat" id="rp-total">—</div>
+                <div class="report-sub">全ソース合計</div>
+            </div>
+            <div class="report-card" style="border-top:3px solid var(--red)">
+                <div class="report-card-title">高優先度</div>
+                <div class="report-stat" id="rp-high" style="color:var(--red)">—</div>
+                <div class="report-sub">要対応件数</div>
+            </div>
+            <div class="report-card" style="border-top:3px solid var(--green)">
+                <div class="report-card-title">アポ・採択</div>
+                <div class="report-stat" id="rp-win" style="color:var(--green)">—</div>
+                <div class="report-sub">成果件数</div>
+            </div>
+        </div>
+        <div class="report-section-title" style="margin-top:8px;">ソース別内訳</div>
+        <div class="report-grid">
+            <div class="report-card">
+                <div class="report-card-title">アクセラ</div>
+                <div class="report-stat" id="rp-accel" style="color:var(--blue)">—</div>
+                <div class="report-sub" id="rp-accel-sub">—</div>
+            </div>
+            <div class="report-card">
+                <div class="report-card-title">展示会</div>
+                <div class="report-stat" id="rp-expo" style="color:#92400E">—</div>
+                <div class="report-sub" id="rp-expo-sub">—</div>
+            </div>
+            <div class="report-card">
+                <div class="report-card-title">イベント</div>
+                <div class="report-stat" id="rp-event" style="color:var(--green)">—</div>
+                <div class="report-sub" id="rp-event-sub">—</div>
+            </div>
+        </div>
+        <div class="report-section-title" style="margin-top:8px;">担当者別件数</div>
+        <div class="report-grid" style="grid-template-columns:repeat(4,1fr)">
+            <div class="report-card">
+                <div class="report-card-title">田中</div>
+                <div class="report-stat" id="rp-p0" style="color:var(--blue)">—</div>
+                <div class="report-sub">担当案件</div>
+            </div>
+            <div class="report-card">
+                <div class="report-card-title">鈴木</div>
+                <div class="report-stat" id="rp-p1" style="color:#7C3AED">—</div>
+                <div class="report-sub">担当案件</div>
+            </div>
+            <div class="report-card">
+                <div class="report-card-title">佐藤</div>
+                <div class="report-stat" id="rp-p2" style="color:#059669">—</div>
+                <div class="report-sub">担当案件</div>
+            </div>
+            <div class="report-card">
+                <div class="report-card-title">山田</div>
+                <div class="report-stat" id="rp-p3" style="color:#DC2626">—</div>
+                <div class="report-sub">担当案件</div>
+            </div>
+        </div>
+        <div class="report-section-title" style="margin-top:8px;">優先度別件数</div>
+        <div class="report-grid">
+            <div class="report-card" style="border-top:3px solid var(--red)">
+                <div class="report-card-title">高</div>
+                <div class="report-stat" id="rp-prio-high" style="color:var(--red)">—</div>
+                <div class="report-sub">要対応</div>
+            </div>
+            <div class="report-card" style="border-top:3px solid var(--amber)">
+                <div class="report-card-title">中</div>
+                <div class="report-stat" id="rp-prio-mid" style="color:var(--amber)">—</div>
+                <div class="report-sub">通常対応</div>
+            </div>
+            <div class="report-card" style="border-top:3px solid var(--muted)">
+                <div class="report-card-title">低</div>
+                <div class="report-stat" id="rp-prio-low" style="color:var(--muted)">—</div>
+                <div class="report-sub">低優先</div>
+            </div>
+        </div>
+        <div class="report-section-title" style="margin-top:8px;">アクセラ ステージ別</div>
+        <div class="charts-grid" style="padding:0 0 8px;">
+            <div class="chart-card">
+                <div class="chart-card-title">ステージ分布</div>
+                <div class="chart-canvas-wrap"><canvas id="rp-ch-stage"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-title">展示会 フォロー状況</div>
+                <div class="chart-canvas-wrap"><canvas id="rp-ch-follow"></canvas></div>
+            </div>
+        </div>
+
+        <div class="report-section-title" style="margin-top:8px;">月別リード推移</div>
+        <div class="chart-card" style="margin-bottom:16px;">
+            <div class="chart-card-title">月別リード数（ソース別積み上げ）</div>
+            <div style="position:relative;height:240px;"><canvas id="rp-ch-monthly"></canvas></div>
+        </div>
+
+        <div class="report-section-title" style="margin-top:8px;">担当者別ワークロード</div>
+        <div class="chart-card" style="margin-bottom:16px;">
+            <div class="chart-card-title">担当者別件数（優先度別）</div>
+            <div style="position:relative;height:240px;"><canvas id="rp-ch-workload"></canvas></div>
+        </div>
+
+        <div class="report-section-title" style="margin-top:8px;">〆切アラート</div>
+        <div id="rp-alert-section" style="margin-bottom:16px;"></div>
+
+        <div class="report-section-title" style="margin-top:8px;">ソース別商談化率</div>
+        <div id="rp-conv-section" style="margin-bottom:16px;"></div>
+
+        <div class="report-section-title" style="margin-top:8px;">展示会別フォロー完了率</div>
+        <div class="chart-card" style="margin-bottom:16px;">
+            <div class="chart-card-title">展示会ごとのフォロー段階分布</div>
+            <div style="position:relative;height:260px;"><canvas id="rp-ch-expo-follow"></canvas></div>
+        </div>
+
+        <div class="report-section-title" style="margin-top:8px;">長期未更新リード</div>
+        <div id="rp-stale-section" style="margin-bottom:16px;"></div>
+    </div>
+</div><!-- /view-report -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: 〆切カレンダー (placeholder)
+════════════════════════════════════════════════ -->
+<div id="view-calendar" class="view">
+    <div class="placeholder-body">
+        <div class="placeholder-icon" style="color:var(--muted)">&#x1F4C5;</div>
+        <div class="placeholder-title">〆切カレンダー</div>
+        <div class="placeholder-sub">このビューは近日公開予定です。</div>
+    </div>
+</div>
+
+</div><!-- /main -->
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-bg" id="addModal" onclick="bgCloseModal(event)">
+<div class="modal-box">
+    <div class="modal-head">
+        <div class="modal-title">新規リード追加</div>
+        <button class="p-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+        <!-- ソース選択 -->
+        <div class="form-group">
+            <div class="form-label">ソース<span>*</span></div>
+            <div class="src-tabs">
+                <button class="src-tab on" data-src="accel" onclick="switchAddSrc('accel',this)">アクセラ</button>
+                <button class="src-tab" data-src="expo" onclick="switchAddSrc('expo',this)">展示会</button>
+                <button class="src-tab" data-src="event" onclick="switchAddSrc('event',this)">イベント</button>
+            </div>
+        </div>
+
+        <!-- ─── 共通フィールド ─── -->
+        <div class="form-sec">基本情報</div>
+        <div class="form-grid">
+            <!-- アクセラ: 案件名、他: 企業名 -->
+            <div class="form-group span2">
+                <label class="form-label" id="af-name-label">案件名<span>*</span></label>
+                <input class="form-input" id="af-name" type="text" placeholder="例: IPA 未踏アドバンスト2026">
+            </div>
+            <div class="form-group span2" id="af-company-wrap">
+                <label class="form-label">企業名</label>
+                <input class="form-input" id="af-company" type="text" placeholder="例: 株式会社〇〇">
+            </div>
+            <div class="form-group">
+                <label class="form-label">優先度<span>*</span></label>
+                <select class="form-input" id="af-prio">
+                    <option value="高">高</option>
+                    <option value="中" selected>中</option>
+                    <option value="低">低</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">日付 / 〆切</label>
+                <input class="form-input" id="af-date" type="date">
+            </div>
+            <div class="form-group">
+                <label class="form-label">社内担当<span>*</span></label>
+                <select class="form-input" id="af-person">
+                    <option value="田中">田中</option>
+                    <option value="鈴木">鈴木</option>
+                    <option value="佐藤">佐藤</option>
+                    <option value="山田">山田</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" id="af-role-label">役割</label>
+                <select class="form-input" id="af-role">
+                    <option value="AE">AE（Account Executive）</option>
+                    <option value="SS">SS（Sales Specialist）</option>
+                    <option value="SM">SM（Sales Manager）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">ステータス<span>*</span></label>
+                <select class="form-input" id="af-status">
+                    <option value="準備中">準備中</option>
+                    <option value="応募中">応募中</option>
+                    <option value="審査中">審査中</option>
+                    <option value="完了">完了</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ─── アクセラ専用 ─── -->
+        <div id="af-sec-accel">
+            <div class="form-sec">アクセラ詳細</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">ステージ<span>*</span></label>
+                    <select class="form-input" id="af-stage">
+                        <option value="リード">リード</option>
+                        <option value="接触済">接触済</option>
+                        <option value="提出済">提出済</option>
+                        <option value="商談化">商談化</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">フェーズ</label>
+                    <select class="form-input" id="af-phase">
+                        <option value="案件評価">案件評価</option>
+                        <option value="方針設計">方針設計</option>
+                        <option value="情報設計・作成">情報設計・作成</option>
+                        <option value="情報設計・レビュー">情報設計・レビュー</option>
+                        <option value="スライド・作成">スライド・作成</option>
+                        <option value="スライド・レビュー">スライド・レビュー</option>
+                        <option value="修正・提出">修正・提出</option>
+                        <option value="提出済">提出済</option>
+                        <option value="商談化">商談化</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quarter</label>
+                    <select class="form-input" id="af-quarter">
+                        <option value="Q1">Q1</option>
+                        <option value="Q2">Q2</option>
+                        <option value="Q3" selected>Q3</option>
+                        <option value="Q4">Q4</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">金額支援</label>
+                    <input class="form-input" id="af-amount" type="text" placeholder="例: 最大500万円">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">提案効率</label>
+                    <select class="form-input" id="af-efficiency">
+                        <option value="高">高</option>
+                        <option value="中" selected>中</option>
+                        <option value="低">低</option>
+                    </select>
+                </div>
+                <div class="form-group span2">
+                    <label class="form-label">提案価値</label>
+                    <input class="form-input" id="af-value" type="text" placeholder="例: 技術認定＋資金">
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── 展示会専用 ─── -->
+        <div id="af-sec-expo" style="display:none">
+            <div class="form-sec">担当者情報（名刺）</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">氏名</label>
+                    <input class="form-input" id="af-name2-expo" type="text" placeholder="例: 山崎 健一">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">役職</label>
+                    <input class="form-input" id="af-role2-expo" type="text" placeholder="例: 部長">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">部署</label>
+                    <input class="form-input" id="af-dept-expo" type="text" placeholder="例: 情報システム部">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">メール</label>
+                    <input class="form-input" id="af-contact-expo" type="email" placeholder="例: name@company.com">
+                </div>
+            </div>
+            <div class="form-sec">展示会詳細</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">展示会名</label>
+                    <select class="form-input" id="af-expo-name">
+                        <option value="Japan IT Week">Japan IT Week</option>
+                        <option value="製造業展示会">製造業展示会</option>
+                        <option value="マーケティングEXPO">マーケティングEXPO</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">業種</label>
+                    <select class="form-input" id="af-industry">
+                        <option value="IT・SaaS">IT・SaaS</option>
+                        <option value="製造業">製造業</option>
+                        <option value="商社・貿易">商社・貿易</option>
+                        <option value="メディア">メディア</option>
+                        <option value="クリエイティブ">クリエイティブ</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">決済権</label>
+                    <select class="form-input" id="af-decision">
+                        <option value="あり">あり</option>
+                        <option value="なし">なし</option>
+                        <option value="不明" selected>不明</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">フォロー状況</label>
+                    <select class="form-input" id="af-follow">
+                        <option value="メール作成済み">メール作成済み</option>
+                        <option value="送付済み">送付済み</option>
+                        <option value="返信あり">返信あり</option>
+                        <option value="アポ取得">アポ取得</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">予算規模</label>
+                    <select class="form-input" id="af-budget">
+                        <option value="未確認" selected>未確認</option>
+                        <option value="〜100万">〜100万</option>
+                        <option value="100〜500万">100〜500万</option>
+                        <option value="500万〜">500万〜</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">導入時期</label>
+                    <select class="form-input" id="af-timing">
+                        <option value="未定" selected>未定</option>
+                        <option value="即時">即時</option>
+                        <option value="2026年Q3">2026 Q3</option>
+                        <option value="2026年Q4">2026 Q4</option>
+                    </select>
+                </div>
+                <div class="form-group span2">
+                    <label class="form-label">ニーズ</label>
+                    <input class="form-input" id="af-needs" type="text" placeholder="例: 業務効率化、AI導入">
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── イベント専用 ─── -->
+        <div id="af-sec-event" style="display:none">
+            <div class="form-sec">名刺画像</div>
+            <div class="form-grid full">
+                <div class="form-group">
+                    <div class="card-upload" id="cardUploadZone" onclick="document.getElementById('af-card-file').click()"
+                         ondragover="handleCardDragOver(event)"
+                         ondragleave="handleCardDragLeave(event)"
+                         ondrop="handleCardDrop(event)">
+                        <input type="file" id="af-card-file" accept="image/*" onchange="handleCardFile(this.files[0])">
+                        <div class="card-upload-icon">&#x1F4F7;</div>
+                        <div class="card-upload-txt"><strong>クリックまたはドラッグ</strong>して名刺画像をアップロード<br>JPG / PNG / HEIC 対応</div>
+                    </div>
+                    <div class="card-preview-wrap" id="cardPreviewWrap">
+                        <img id="cardPreviewImg" src="" alt="名刺プレビュー">
+                        <button class="card-preview-clear" onclick="clearCardImage(event)" title="削除">✕</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-sec">担当者情報（名刺から転記）</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">氏名</label>
+                    <input class="form-input" id="af-name2-event" type="text" placeholder="例: 吉田 真一">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">役職</label>
+                    <input class="form-input" id="af-role2-event" type="text" placeholder="例: 代表">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">部署</label>
+                    <input class="form-input" id="af-dept-event" type="text" placeholder="例: 事業開発部">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">メール</label>
+                    <input class="form-input" id="af-contact-event" type="email" placeholder="例: name@company.com">
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── 共通: メモ ─── -->
+        <div class="form-sec">メモ</div>
+        <div class="form-grid full">
+            <div class="form-group">
+                <textarea class="form-input" id="af-memo" placeholder="商談メモ、次アクション等を自由に記入..."></textarea>
+            </div>
+        </div>
+
+    </div><!-- /modal-body -->
+    <div class="modal-foot">
+        <button id="deleteBtn" class="btn-cancel" onclick="deleteCurrentLead()" style="display:none;color:var(--red);border-color:var(--red);">削除</button>
+        <div style="flex:1"></div>
+        <button class="btn-cancel" onclick="closeAddModal()">キャンセル</button>
+        <button class="btn btn-p" id="submitBtn" onclick="submitAddForm()">追加する</button>
+    </div>
+</div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="名刺">
+</div>
+
+<!-- OVERLAY + PANEL -->
+<div class="overlay" id="ov" onclick="closeP()"></div>
+<div class="panel" id="panel">
+    <div class="p-head"><div class="p-title" id="pt">—</div><div style="display:flex;gap:8px;align-items:center;"><button class="btn btn-p" onclick="openEditModal()" style="font-size:.72rem;padding:5px 12px;">編集</button><button class="p-close" onclick="closeP()">✕</button></div></div>
+    <div class="p-body" id="pb"></div>
+</div>
+
+<script>
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// C4: escape for JS string literals inside onclick attributes (escapes single quotes)
+function escJs(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+// ━━ ESC KEY (C1) ━━
+document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape') return;
+    const lb = document.getElementById('lightbox');
+    if(lb && lb.classList.contains('show')){ closeLightbox(); return; }
+    const modal = document.getElementById('addModal');
+    if(modal && modal.classList.contains('show')){ closeAddModal(); return; }
+    const panel = document.getElementById('panel');
+    if(panel && panel.classList.contains('open')){ closeP(); return; }
+});
+
+// ━━ TOAST (H1) ━━
+function showToast(msg, type='success'){
+    const t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ━━ DATE FORMAT (H4) ━━
+function fmtDate(d){ if(!d) return '—'; const dt = new Date(d+'T00:00:00'); return isNaN(dt.getTime())?d:dt.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'}); }
+
+// 1月始まり会計年度：Q1=1-3月, Q2=4-6月, Q3=7-9月, Q4=10-12月
+function getFY(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return null;
+    return d.getFullYear();
+}
+function getQuarter(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return null;
+    const m = d.getMonth() + 1; // 1-12
+    if (m <= 3) return 'Q1';
+    if (m <= 6) return 'Q2';
+    if (m <= 9) return 'Q3';
+    return 'Q4';
+}
+
+// ━━ DATA ━━
+// ダミーデータ（初回のみ使用）
+const DATA = [
+    // アクセラ
+    {id:1,name:'IPA 未踏アドバンスト2026',company:'IPA（情報処理推進機構）',src:'accel',person:'田中',role:'AE',status:'応募中',stage:'提出済',prio:'高',date:'2026-07-15',memo:'提案資料の最終確認が必要。早期〆切に注意。',phase:'書類選考',quarter:'Q3',amount:'最大500万円',value:'技術認定＋資金',efficiency:'高',contact:'—'},
+    {id:2,name:'NEDO スタートアップ支援',company:'NEDO',src:'accel',person:'鈴木',role:'SM',status:'審査中',stage:'商談化',prio:'高',date:'2026-07-20',memo:'ヒアリング日程調整中。',phase:'一次審査',quarter:'Q3',amount:'最大1,000万円',value:'資金＋広報',efficiency:'高',contact:'—'},
+    {id:3,name:'J-Startup 認定プログラム',company:'経済産業省',src:'accel',person:'田中',role:'AE',status:'準備中',stage:'接触済',prio:'中',date:'2026-08-01',memo:'応募要件の確認が必要。',phase:'情報収集',quarter:'Q3',amount:'—',value:'認知度向上',efficiency:'中',contact:'—'},
+    {id:4,name:'AWS Startup Program',company:'Amazon Web Services',src:'accel',person:'佐藤',role:'SS',status:'完了',stage:'商談化',prio:'低',date:'2026-06-10',memo:'採択済み。クレジット付与待ち。',phase:'採択後',quarter:'Q2',amount:'クレジット$25K',value:'インフラ費削減',efficiency:'高',contact:'—'},
+    {id:5,name:'Google for Startups',company:'Google',src:'accel',person:'山田',role:'AE',status:'準備中',stage:'リード',prio:'中',date:'2026-08-20',memo:'担当者へのコンタクト済み。',phase:'情報収集',quarter:'Q3',amount:'クレジット$200K',value:'技術支援',efficiency:'高',contact:'—'},
+    {id:6,name:'Salesforce Startup Program',company:'Salesforce',src:'accel',person:'鈴木',role:'SS',status:'応募中',stage:'接触済',prio:'高',date:'2026-07-05',memo:'SaaS系の強化に期待。早急に応募書類を完成させる。',phase:'書類選考',quarter:'Q3',amount:'CRMライセンス無償',value:'ツール活用',efficiency:'中',contact:'—'},
+
+    // 展示会
+    {id:7,name:'株式会社テックソリューション',company:'株式会社テックソリューション',src:'expo',person:'鈴木',role:'応対者',status:'フォロー中',prio:'高',date:'2026-06-20',memo:'DX推進に強い関心。来月デモ希望。',expoName:'Japan IT Week',industry:'IT・SaaS',needs:'業務効率化',budget:'500万〜',timing:'2026年Q3',decision:'あり',follow:'送付済み',scale:'大規模',contact:'—',name2:'山崎 健一',dept:'情報システム部',role2:'部長'},
+    {id:8,name:'合同会社フューチャーラボ',company:'合同会社フューチャーラボ',src:'expo',person:'田中',role:'引継担当',status:'アポ取得',prio:'高',date:'2026-06-20',memo:'CTO自らブースに来訪。興味高い。',expoName:'Japan IT Week',industry:'IT・SaaS',needs:'AI導入',budget:'〜100万',timing:'即時',decision:'あり',follow:'アポ取得',scale:'スタートアップ',contact:'yamamoto@futurelab.example',name2:'山本 直樹',dept:'技術部',role2:'CTO'},
+    {id:9,name:'株式会社グローバルトレード',company:'株式会社グローバルトレード',src:'expo',person:'佐藤',role:'応対者',status:'返信待ち',prio:'中',date:'2026-06-21',memo:'海外展開に興味。英語対応が必要かも。',expoName:'Japan IT Week',industry:'商社・貿易',needs:'グローバル展開支援',budget:'未確認',timing:'未定',decision:'不明',follow:'送付済み',scale:'大規模',contact:'—',name2:'田辺 洋子',dept:'海外事業部',role2:'課長'},
+    {id:10,name:'有限会社スマートファクトリー',company:'有限会社スマートファクトリー',src:'expo',person:'山田',role:'応対者',status:'新規',prio:'低',date:'2026-06-21',memo:'製造業DX。名刺交換のみ。',expoName:'製造業展示会',industry:'製造業',needs:'IoT・設備管理',budget:'100〜500万',timing:'未定',decision:'なし',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'中村 誠',dept:'生産管理部',role2:'担当'},
+    {id:11,name:'株式会社デジタルメディア',company:'株式会社デジタルメディア',src:'expo',person:'鈴木',role:'引継担当',status:'フォロー中',prio:'高',date:'2026-05-15',memo:'メール送付済み。返信まち。',expoName:'マーケティングEXPO',industry:'メディア',needs:'マーケオートメーション',budget:'100〜500万',timing:'2026年Q4',decision:'なし',follow:'返信あり',scale:'中規模',contact:'—',name2:'橋本 彩',dept:'マーケティング部',role2:'マネージャー'},
+    {id:12,name:'合同会社クリエイティブワークス',company:'合同会社クリエイティブワークス',src:'expo',person:'田中',role:'応対者',status:'アポ取得',prio:'中',date:'2026-05-16',memo:'デザイン業務の効率化に関心。',expoName:'マーケティングEXPO',industry:'クリエイティブ',needs:'コンテンツ制作支援',budget:'〜100万',timing:'2026年Q4',decision:'あり',follow:'アポ取得',scale:'スタートアップ',contact:'info@creativeworks.example',name2:'松本 翔太',dept:'制作部',role2:'ディレクター'},
+
+    // アクセラ追加
+    {id:16,name:'SoftBank スタートアップ採用プログラム',company:'SoftBank',src:'accel',person:'田中',role:'AE',status:'応募中',stage:'提出済',prio:'高',date:'2026-07-10',memo:'ソフバン担当者と事前コンタクト済み。資料修正中。',phase:'スライド・レビュー',quarter:'Q3',amount:'〜500万円',value:'販路拡大',efficiency:'高',contact:'メッセージ'},
+    {id:17,name:'STATION Ai アクセラ2026',company:'STATION Ai',src:'accel',person:'鈴木',role:'AE',status:'準備中',stage:'リード',prio:'中',date:'2026-09-01',memo:'愛知拠点強化に向けて検討中。',phase:'案件評価',quarter:'Q3',amount:'〜300万円',value:'拠点確保',efficiency:'中',contact:'未実施'},
+    {id:18,name:'東京都スタートアップ支援事業',company:'東京都',src:'accel',person:'山田',role:'SS',status:'審査中',stage:'商談化',prio:'高',date:'2026-07-25',memo:'一次審査通過。最終プレゼン準備中。',phase:'修正・提出',quarter:'Q3',amount:'最大2,000万円',value:'資金＋認知',efficiency:'高',contact:'面談'},
+    {id:19,name:'Creww オープンイノベーションプログラム',company:'Creww',src:'accel',person:'佐藤',role:'AE',status:'失注',stage:'接触済',prio:'低',date:'2026-05-31',memo:'条件が合わず辞退。次期公募に再チャレンジ予定。',phase:'案件評価',quarter:'Q2',amount:'〜100万円',value:'ブランド認知',efficiency:'低',contact:'メッセージ'},
+    {id:20,name:'ひろしまAIサンドボックス2026',company:'広島県',src:'accel',person:'田中',role:'SM',status:'準備中',stage:'リード',prio:'中',date:'2026-08-15',memo:'広島拠点の実証実験枠。地域密着型で進める。',phase:'方針設計',quarter:'Q3',amount:'〜300万円',value:'実証実績',efficiency:'中',contact:'未実施'},
+    {id:21,name:'J-good-tech マッチングプログラム',company:'J-good-tech',src:'accel',person:'鈴木',role:'AE',status:'応募中',stage:'提出済',prio:'高',date:'2026-07-08',memo:'中小企業との協業案件。製造業クライアントとの接点確保が目的。',phase:'情報設計・作成',quarter:'Q3',amount:'条件アリ',value:'製造業開拓',efficiency:'中',contact:'メッセージ'},
+    {id:22,name:'NEDO IoT推進ラボ',company:'NEDO',src:'accel',person:'山田',role:'AE',status:'辞退',stage:'リード',prio:'低',date:'2026-04-20',memo:'スコープが合わず応募見送り。',phase:'案件評価',quarter:'Q2',amount:'〜1,000万円',value:'技術実証',efficiency:'低',contact:'未実施'},
+    {id:23,name:'Agorize グローバルチャレンジ',company:'Agorize',src:'accel',person:'佐藤',role:'SS',status:'準備中',stage:'接触済',prio:'中',date:'2026-09-30',memo:'英語での応募が必要。グローバル展開の足がかりとして検討。',phase:'情報収集',quarter:'Q3',amount:'不明',value:'グローバル展開',efficiency:'中',contact:'メッセージ'},
+    {id:40,name:'経産省 スタートアップ育成5か年計画',company:'経済産業省',src:'accel',person:'田中',role:'AE',status:'進行中',stage:'商談化',prio:'高',date:'2026-07-18',memo:'担当官とのミーティング設定済み。最終資料の調整中。',phase:'プレゼン準備',quarter:'Q3',amount:'最大3,000万円',value:'政府認定＋資金',efficiency:'高',contact:'面談'},
+    {id:41,name:'三菱地所アクセラレーター2026',company:'三菱地所',src:'accel',person:'山田',role:'SM',status:'進行中',stage:'提出済',prio:'高',date:'2026-07-22',memo:'不動産DX枠で選考通過。次フェーズのプレゼン待ち。',phase:'書類選考',quarter:'Q3',amount:'支援金500万＋オフィス',value:'拠点＋販路',efficiency:'高',contact:'メッセージ'},
+    {id:42,name:'リクルート スタートアップ共創プログラム',company:'リクルート',src:'accel',person:'鈴木',role:'AE',status:'進行中',stage:'接触済',prio:'中',date:'2026-08-05',memo:'HR領域のパートナー連携として検討中。担当部署と調整中。',phase:'情報設計・作成',quarter:'Q3',amount:'条件アリ',value:'HR業界開拓',efficiency:'中',contact:'メッセージ'},
+
+    // 展示会追加
+    {id:24,name:'株式会社インフラテック',company:'株式会社インフラテック',src:'expo',person:'田中',role:'応対者',status:'フォロー中',prio:'高',date:'2026-04-10',memo:'インフラ老朽化対策に関心高い。予算確保済み。',expoName:'産業DX総合展2025夏',industry:'インフラ',needs:'IoT監視',budget:'500万〜',timing:'3ヶ月以内',decision:'あり',follow:'返信あり',scale:'大規模',contact:'—',name2:'石川 大輔',dept:'設備管理部',role2:'部長'},
+    {id:25,name:'医療法人ヘルスケアソリューションズ',company:'医療法人ヘルスケアソリューションズ',src:'expo',person:'鈴木',role:'応対者',status:'新規',prio:'中',date:'2026-04-11',memo:'電子カルテ連携に興味。コンプライアンス確認が必要。',expoName:'産業DX総合展2025夏',industry:'医療',needs:'電子カルテ連携',budget:'100〜500万',timing:'一年以内',decision:'なし',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'吉村 博子',dept:'情報管理室',role2:'室長'},
+    {id:26,name:'株式会社ロジスティクスワン',company:'株式会社ロジスティクスワン',src:'expo',person:'山田',role:'引継担当',status:'アポ取得',prio:'高',date:'2026-05-22',memo:'倉庫の自動化ニーズが明確。競合比較中とのこと。',expoName:'CEATEC 2025',industry:'物流',needs:'倉庫自動化',budget:'500万〜',timing:'すでに導入を検討している',decision:'あり',follow:'アポ取得',scale:'大規模',contact:'logistics@one.example',name2:'前田 健太',dept:'物流企画部',role2:'次長'},
+    {id:27,name:'国立大学法人A大学',company:'国立大学法人A大学',src:'expo',person:'佐藤',role:'応対者',status:'返信待ち',prio:'低',date:'2026-05-23',memo:'研究用途での導入検討。予算規模が小さいが長期関係性に期待。',expoName:'CEATEC 2025',industry:'教育',needs:'研究データ管理',budget:'〜100万',timing:'未定',decision:'なし',follow:'送付済み',scale:'小規模',contact:'—',name2:'岡田 理恵',dept:'情報基盤センター',role2:'准教授'},
+    {id:28,name:'株式会社ファイナンスDX',company:'株式会社ファイナンスDX',src:'expo',person:'田中',role:'引継担当',status:'フォロー中',prio:'高',date:'2026-06-12',memo:'FinTech領域の大手。決済処理の効率化ニーズ。',expoName:'新技術創出交流会2025',industry:'金融',needs:'決済処理効率化',budget:'500万〜',timing:'6ヶ月以内',decision:'あり',follow:'返信あり',scale:'大規模',contact:'dx@fintech.example',name2:'西田 誠一',dept:'デジタル推進部',role2:'部長'},
+    {id:29,name:'株式会社セキュアシールド',company:'株式会社セキュアシールド',src:'expo',person:'鈴木',role:'応対者',status:'新規',prio:'中',date:'2026-06-13',memo:'サイバーセキュリティ強化が急務とのこと。',expoName:'新技術創出交流会2025',industry:'セキュリティ',needs:'ゼロトラスト導入',budget:'100〜500万',timing:'3ヶ月以内',decision:'不明',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'川口 誠',dept:'情報セキュリティ室',role2:'室長'},
+    {id:30,name:'株式会社コンサルアドバイザーズ',company:'株式会社コンサルアドバイザーズ',src:'expo',person:'山田',role:'応対者',status:'アポ取得',prio:'高',date:'2026-06-21',memo:'DX支援の下流工程をアウトソースしたい意向。パートナー協業が本命。',expoName:'Eight EXPO 2026 Spring',industry:'コンサル',needs:'DX支援ツール',budget:'500万〜',timing:'すでに導入を検討している',decision:'あり',follow:'アポ取得',scale:'大規模',contact:'info@consultadvisors.example',name2:'高橋 恵理',dept:'デジタル推進グループ',role2:'マネージャー'},
+    {id:31,name:'株式会社メディアプロダクション',company:'株式会社メディアプロダクション',src:'expo',person:'佐藤',role:'応対者',status:'フォロー中',prio:'中',date:'2026-06-22',memo:'コンテンツ制作にAI活用を検討中。',expoName:'Eight EXPO 2026 Spring',industry:'広告',needs:'AI活用コンテンツ制作',budget:'100〜500万',timing:'6ヶ月以内',decision:'なし',follow:'送付済み',scale:'小規模',contact:'—',name2:'村田 さくら',dept:'クリエイティブ部',role2:'プロデューサー'},
+
+    // イベント
+    {id:32,name:'有限会社サクラテック',company:'有限会社サクラテック',src:'event',person:'佐藤',role:'担当',status:'完了',prio:'中',date:'2026-06-05',memo:'スタートアップ交流会で名刺交換。フォローメール送付済み。',contact:'info@sakuratech.example',name2:'吉田 真一',dept:'事業開発部',role2:'代表'},
+    {id:33,name:'株式会社イノベーションハブ',company:'株式会社イノベーションハブ',src:'event',person:'佐藤',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-05',memo:'VCからの紹介。CTOと面識あり。継続フォロー中。',contact:'contact@ihub.example',name2:'木村 拓也',dept:'技術部',role2:'CTO'},
+    {id:34,name:'合同会社ビズパートナー',company:'合同会社ビズパートナー',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'低',date:'2026-06-12',memo:'懇親会で名刺交換のみ。フォロー検討中。',contact:'—',name2:'井上 恵子',dept:'営業部',role2:'部長'},
+    {id:35,name:'株式会社グロースデザイン',company:'株式会社グロースデザイン',src:'event',person:'田中',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-15',memo:'登壇後の懇親会で接触。プロダクトに強い興味。来週ミーティング設定予定。',contact:'growth@design.example',name2:'藤田 健一',dept:'事業戦略部',role2:'執行役員'},
+    {id:36,name:'NPO法人テックフォーグッド',company:'NPO法人テックフォーグッド',src:'event',person:'山田',role:'担当',status:'完了',prio:'低',date:'2026-06-18',memo:'社会課題×テックイベントで接触。予算規模小さいが認知拡大目的で関係継続。',contact:'info@tech4good.example',name2:'中島 麻衣',dept:'事務局',role2:'局長'},
+    {id:37,name:'株式会社AIベンチャーズ',company:'株式会社AIベンチャーズ',src:'event',person:'鈴木',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-20',memo:'AI特化VCのCOOと接触。出資先スタートアップへの紹介を打診中。',contact:'coo@aiventures.example',name2:'坂本 直之',dept:'投資チーム',role2:'COO'},
+    {id:38,name:'株式会社デジタルガバメント',company:'株式会社デジタルガバメント',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'中',date:'2026-06-25',memo:'行政DXセミナーで名刺交換。公共調達への関心あり。',contact:'—',name2:'小林 聡',dept:'公共事業部',role2:'部長'},
+    {id:39,name:'合同会社スマートエネルギー',company:'合同会社スマートエネルギー',src:'event',person:'田中',role:'担当',status:'新規',prio:'低',date:'2026-06-28',memo:'エネルギー×ITイベントで接触。まず資料送付予定。',contact:'info@smartenergy.example',name2:'平井 達也',dept:'技術部',role2:'主任'},
+    {id:43,name:'株式会社フィンテックラボ',company:'株式会社フィンテックラボ',src:'event',person:'山田',role:'担当',status:'フォロー中',prio:'高',date:'2026-07-01',memo:'FinTech企業の事業責任者。APIを活用した金融データ連携に関心。具体的なPoC提案を依頼された。',contact:'lab@fintechlab.example',name2:'渡辺 大樹',dept:'プロダクト部',role2:'VP of Product'},
+    {id:44,name:'株式会社クラウドネクスト',company:'株式会社クラウドネクスト',src:'event',person:'鈴木',role:'担当',status:'完了',prio:'中',date:'2026-07-02',memo:'SaaS導入支援セミナーで登壇後に接触。クラウド移行案件として引き続き関係継続予定。',contact:'info@cloudnext.example',name2:'大野 剛',dept:'インフラ部',role2:'部長'},
+    {id:45,name:'合同会社グリーンテック',company:'合同会社グリーンテック',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'低',date:'2026-07-03',memo:'環境×テックイベントで名刺交換。サステナビリティ領域のDX推進に関心。まずメール送付予定。',contact:'—',name2:'森田 悠',dept:'サービス開発部',role2:'代表'},
+    {id:46,name:'株式会社メドテックジャパン',company:'株式会社メドテックジャパン',src:'event',person:'田中',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-30',memo:'医療機器メーカーのDX担当役員と接触。臨床データ管理のデジタル化を検討中。来週デモ実施予定。',contact:'dx@medtech-jp.example',name2:'岡本 信夫',dept:'デジタル戦略室',role2:'室長'},
+];
+
+// ━━ STORAGE ━━
+function saveToStorage(){
+    try{ localStorage.setItem('lead_hub_data', JSON.stringify(DATA)); }
+    catch(e){ showToast('保存に失敗しました（ストレージ容量不足の可能性があります）', 'error'); }
+}
+const DATA_VERSION = '2026-07-02-v2';
+function loadFromStorage(){
+    try{
+        const ver = localStorage.getItem('lead_hub_version');
+        if(ver !== DATA_VERSION){ localStorage.removeItem('lead_hub_data'); localStorage.setItem('lead_hub_version', DATA_VERSION); return; }
+        const s = localStorage.getItem('lead_hub_data');
+        if(s){ const d=JSON.parse(s); DATA.splice(0,DATA.length,...d); }
+    }catch(e){}
+}
+loadFromStorage();
+
+// ━━ FILTER STATE ━━
+const F = {sources:[],prios:[],status:[],person:[],expo:[],industry:[],follow:[],decision:[],budget:[],phase:[],quarter:[],timing:[],stage:[],scale:[]};
+let sortKey = null, sortDir = 1;
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+const RP_FILTER = { fy: 'all', quarter: 'all' };
+
+function setRpFilter(key, btn) {
+    RP_FILTER[key] = btn.dataset.v;
+    btn.closest('.fp').querySelectorAll('.fb').forEach(b => b.className = 'fb');
+    btn.className = 'fb on';
+    renderReport();
+}
+
+function getRpData() {
+    return DATA.filter(d => {
+        const fy = getFY(d.date);
+        const q  = getQuarter(d.date);
+        if (RP_FILTER.fy !== 'all' && String(fy) !== RP_FILTER.fy) return false;
+        if (RP_FILTER.quarter !== 'all' && q !== RP_FILTER.quarter) return false;
+        return true;
+    });
+}
+function setSort(key){
+    if(sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; }
+    render();
+}
+
+function toggleSource(btn){
+    const v = btn.dataset.v;
+    const idx = F.sources.indexOf(v);
+    if(idx > -1){ F.sources.splice(idx,1); btn.className='fb'; }
+    else { F.sources.push(v); btn.className='fb on'; }
+    currentPage = 1;
+    updateStatusFilterOptions();
+    updateDetailFilters();
+    updateChips(); render();
+}
+
+function togglePrio(btn){
+    const v = btn.dataset.v;
+    const idx = F.prios.indexOf(v);
+    if(idx > -1){ F.prios.splice(idx,1); btn.className='fb'; }
+    else { F.prios.push(v); btn.className='fb on'; }
+    currentPage = 1;
+    updateChips(); render();
+}
+
+function setF(key, btn){
+    const v = btn.dataset.v;
+    const pills = btn.closest('.fp, .fe-pills');
+    if(v === 'all'){
+        F[key] = [];
+        pills.querySelectorAll('.fb').forEach(b=>{ b.className = b.dataset.v==='all' ? 'fb on' : 'fb'; });
+    } else {
+        const idx = F[key].indexOf(v);
+        if(idx > -1){ F[key].splice(idx,1); btn.className='fb'; }
+        else { F[key].push(v); btn.className='fb on'; }
+        const allBtn = pills.querySelector('.fb[data-v="all"]');
+        if(allBtn) allBtn.className = F[key].length===0 ? 'fb on' : 'fb';
+    }
+    currentPage = 1;
+    updateChips(); render();
+}
+
+// 詳細フィルターの表示切り替え（ソース選択に連動）
+function updateDetailFilters(){
+    const hasAccel = F.sources.includes('accel');
+    const hasExpo  = F.sources.includes('expo');
+    const hasAll   = F.sources.length === 0; // 全選択（何も選んでいない）
+
+    const showAccel = hasAll || hasAccel;
+    const showExpo  = hasAll || hasExpo;
+    const showNone  = !hasAll && !hasAccel && !hasExpo; // イベントのみ選択
+
+    document.getElementById('detail-accel').style.display = showAccel ? '' : 'none';
+    document.getElementById('detail-expo').style.display  = showExpo  ? '' : 'none';
+    document.getElementById('detail-none').style.display  = showNone  ? '' : 'none';
+}
+
+function resetAllFilters(){
+    ['sources','prios','status','person','expo','industry','follow','decision','budget','phase','quarter','timing','stage','scale'].forEach(k=>{ F[k]=[]; });
+    currentPage = 1;
+    document.querySelectorAll('#f-source .fb').forEach(b=>b.className='fb');
+    document.querySelectorAll('#f-prio .fb').forEach(b=>b.className='fb');
+    updateStatusFilterOptions();
+    ['f-stage','f-phase','f-quarter','f-expo','f-industry','f-scale','f-timing','f-follow','f-decision','f-budget'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.querySelectorAll('.fb').forEach(b=>{ b.className = b.dataset.v==='all' ? 'fb on' : 'fb'; });
+    });
+    document.querySelectorAll('#f-person .fb').forEach(b=>{ b.className = b.dataset.v==='all' ? 'fb on' : 'fb'; });
+    updateDetailFilters();
+    updateChips(); render();
+}
+
+// ステータスフィルターの選択肢をソース選択状態に応じて動的更新する
+function updateStatusFilterOptions(){
+    const srcs = F.sources; // 配列（空=全ソース）
+    const hasAccel = srcs.length === 0 || srcs.includes('accel');
+    const hasExpo  = srcs.length === 0 || srcs.includes('expo');
+    const onlyEvent= srcs.length > 0 && srcs.every(s=>s==='event');
+
+    const container = document.getElementById('f-status');
+    const row = document.getElementById('f-status-row');
+    F.status = []; // 選択をリセット
+
+    let buttons = '';
+    if(onlyEvent){
+        // イベントのみ選択時はステータス選択肢を非表示
+        row.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+    row.style.display = '';
+
+    // 選択肢定義
+    const accelStatusOpts = ['進行中','採択！！','失注','辞退','期限切れ'];
+    const accelStageOpts  = ['リード','接触済','提出済','商談化','採択！！'];
+    const expoStatusOpts  = ['送付済','アポ取得','失注','返信あり'];
+
+    if(hasAccel && !hasExpo){
+        // アクセラのみ
+        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">案件状態</span>';
+        buttons += accelStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
+        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">ステージ</span>';
+        buttons += accelStageOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
+    } else if(hasExpo && !hasAccel){
+        // 展示会のみ
+        buttons += expoStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
+    } else {
+        // 全ソース or アクセラ+展示会
+        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">アクセラ 案件状態</span>';
+        buttons += accelStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
+        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">アクセラ ステージ</span>';
+        buttons += accelStageOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
+        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">展示会</span>';
+        buttons += expoStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
+    }
+
+    container.innerHTML = `<button class="fb on" data-v="all" onclick="toggleStatus(this)">すべて</button>` + buttons;
+}
+
+function toggleExtra(){
+    const el=document.getElementById('filterExtra');
+    const ic=document.getElementById('extraIcon');
+    el.classList.toggle('open');
+    ic.textContent=el.classList.contains('open')?'−':'＋';
+}
+
+const fLabels={sources:{accel:'ソース:アクセラ',expo:'ソース:展示会',event:'ソース:イベント'},prios:{高:'優先度:高',中:'優先度:中',低:'優先度:低'},status:'ステータス:',person:'担当者:',expo:'展示会:',industry:'業種:',follow:'フォロー:',decision:'決済権:',budget:'予算:',phase:'フェーズ:',quarter:'Quarter:',timing:'導入時期:',stage:'ステージ:',scale:'規模:'};
+
+const fKeyLabel={person:'担当者',expo:'展示会',industry:'業種',follow:'フォロー',decision:'決裁権',budget:'予算',phase:'フェーズ',quarter:'Quarter',timing:'導入時期',stage:'ステージ',scale:'規模'};
+const fPillsId={person:'f-person',expo:'f-expo',industry:'f-industry',follow:'f-follow',decision:'f-decision',budget:'f-budget',phase:'f-phase',quarter:'f-quarter',timing:'f-timing',stage:'f-stage',scale:'f-scale'};
+
+function updateChips(){
+    const c=document.getElementById('activeChips');
+    let h='';
+    F.sources.forEach(s=>{ h+=`<div class="af-chip">${esc(fLabels.sources[s]||'ソース:'+s)}<button onclick="clearOneSource('${escJs(s)}')">×</button></div>`; });
+    F.prios.forEach(p=>{ h+=`<div class="af-chip">${esc(fLabels.prios[p]||'優先度:'+p)}<button onclick="clearOnePrio('${escJs(p)}')">×</button></div>`; });
+    F.status.forEach(s=>{ h+=`<div class="af-chip">ステータス:${esc(s)}<button onclick="clearOneStatus('${escJs(s)}')">×</button></div>`; });
+    Object.keys(fKeyLabel).forEach(k=>{
+        F[k].forEach(v=>{ h+=`<div class="af-chip">${esc(fKeyLabel[k]+':'+v)}<button onclick="clearOneF('${escJs(k)}','${escJs(v)}')">×</button></div>`; });
+    });
+    c.innerHTML=h;
+}
+
+function clearOneF(key, val){
+    F[key] = F[key].filter(x=>x!==val);
+    const id = fPillsId[key];
+    if(id){
+        const pills = document.getElementById(id);
+        if(pills){
+            const btn = pills.querySelector(`.fb[data-v="${val}"]`);
+            if(btn) btn.className='fb';
+            const allBtn = pills.querySelector('.fb[data-v="all"]');
+            if(allBtn) allBtn.className = F[key].length===0 ? 'fb on' : 'fb';
+        }
+    }
+    currentPage=1; updateChips(); render();
+}
+
+function toggleStatus(btn){
+    const v=btn.dataset.v;
+    if(v==='all'){
+        F.status=[];
+        document.querySelectorAll('#f-status .fb').forEach(b=>{ b.className=b.dataset.v==='all'?'fb on':'fb'; });
+    } else {
+        const idx=F.status.indexOf(v);
+        if(idx>-1) F.status.splice(idx,1); else F.status.push(v);
+        document.querySelector('#f-status .fb[data-v="all"]').className=F.status.length===0?'fb on':'fb';
+        btn.className=F.status.includes(v)?'fb on':'fb';
+    }
+    updateChips(); render();
+}
+
+function clearOneSource(s){
+    F.sources = F.sources.filter(x=>x!==s);
+    const b = document.querySelector(`#f-source .fb[data-v="${s}"]`);
+    if(b) b.className='fb';
+    currentPage = 1;
+    updateStatusFilterOptions(); updateDetailFilters(); updateChips(); render();
+}
+
+function clearOnePrio(p){
+    F.prios = F.prios.filter(x=>x!==p);
+    const b = document.querySelector(`#f-prio .fb[data-v="${p}"]`);
+    if(b) b.className='fb';
+    currentPage = 1;
+    updateChips(); render();
+}
+
+function clearOneStatus(s){
+    F.status=F.status.filter(x=>x!==s);
+    const b=document.querySelector(`#f-status .fb[data-v="${s}"]`);
+    if(b) b.className='fb';
+    if(F.status.length===0){ const a=document.querySelector('#f-status .fb[data-v="all"]'); if(a) a.className='fb on'; }
+    currentPage = 1;
+    updateChips(); render();
+}
+
+function clearF(key){
+    if(key==='status'){ F.status=[]; document.querySelectorAll('#f-status .fb').forEach(b=>{ b.className=b.dataset.v==='all'?'fb on':'fb'; }); currentPage=1; updateChips(); render(); return; }
+    F[key]=[];
+    const id = fPillsId[key];
+    if(id){
+        const pills = document.getElementById(id);
+        if(pills) pills.querySelectorAll('.fb').forEach(b=>{ b.className = b.dataset.v==='all' ? 'fb on' : 'fb'; });
+    }
+    currentPage = 1;
+    updateChips(); render();
+}
+
+// ━━ EXTRA COLUMN DEFS ━━
+// 既存カラム（企業名・ソース・優先度・ステータス・担当者・〆切）と重複しないフィールドのみ対象
+const EXTRA_COL_DEFS = {
+    expo:     { label: '展示会名',  val: r => r.expoName || '—' },
+    industry: { label: '業種',      val: r => r.industry || '—' },
+    follow:   { label: 'フォロー',  val: r => r.follow   || '—' },
+    decision: { label: '決裁権',    val: r => r.decision || '—' },
+    budget:   { label: '予算規模',  val: r => r.budget   || '—' },
+    phase:    { label: 'フェーズ',  val: r => r.src==='accel' ? (r.phase||'—') : '—' },
+    quarter:  { label: 'Quarter',   val: r => r.quarter  || '—' },
+    timing:   { label: '導入時期',  val: r => r.timing   || '—' },
+    scale:    { label: '規模',       val: r => r.scale    || '—' },
+};
+function getExtraCols(){
+    return Object.keys(EXTRA_COL_DEFS)
+        .filter(k => F[k] && F[k].length > 0)
+        .map(k => ({ key: k, ...EXTRA_COL_DEFS[k] }));
+}
+
+// ━━ RENDER (list view) ━━
+let selId=null;
+let _modalReturn=null; // モーダルからパネルを開いた時の戻り先を保持
+const srcBadge={accel:'badge b-ac',expo:'badge b-ex',event:'badge b-ev'};
+const srcLabel={accel:'アクセラ',expo:'展示会',event:'イベント'};
+const prioClass={高:'badge p-high',中:'badge p-mid',低:'badge p-low'};
+const stClass=(s)=>({
+    '応募中':'st s-act','フォロー中':'st s-act','審査中':'st s-rev',
+    'アポ取得':'st s-done','対応済み':'st s-done','完了':'st s-done',
+    '準備中':'st s-pen','返信待ち':'st s-wait','新規':'st s-new',
+    'リード':'st s-new','接触済':'st s-pen','提出済':'st s-rev','商談化':'st s-done'
+}[s]||'st s-new');
+const avColor=['#2563EB','#7C3AED','#059669','#DC2626','#D97706'];
+const persons=['田中','鈴木','佐藤','山田'];
+
+function avStyle(name){ const i=persons.indexOf(name); return `background:${avColor[i]||avColor[0]}`; }
+
+function changePage(delta){
+    currentPage += delta;
+    render();
+}
+
+function render(){
+    if(_currentView !== 'list') return;
+    // エクストラカラムを計算してtheadを更新
+    const extraCols = getExtraCols();
+    const thead = document.getElementById('thead');
+    if(thead){
+        const extraTh = extraCols.map(c=>`<th style="color:var(--blue);font-size:.72rem">${c.label}</th>`).join('');
+        thead.innerHTML = `<tr>
+            <th onclick="setSort('name')">企業名 <span id="sh-name"></span></th>
+            <th>ソース</th>
+            <th onclick="setSort('prio')">優先度 <span id="sh-prio"></span></th>
+            <th>ステータス</th>
+            <th onclick="setSort('person')">担当者 <span id="sh-person"></span></th>
+            <th onclick="setSort('date')">〆切 <span id="sh-date"></span></th>
+            ${extraTh}
+        </tr>`;
+    }
+    const q=document.getElementById('q').value.toLowerCase();
+    const filtered=DATA.filter(r=>{
+        // ソースフィルター（複数選択: 空=全て）
+        if(F.sources.length>0 && !F.sources.includes(r.src)) return false;
+        // 優先度フィルター（複数選択: 空=全て）
+        if(F.prios.length>0 && !F.prios.includes(r.prio)) return false;
+        // ステータスフィルター: アクセラは案件状態またはステージにマッチ、展示会はステータス、イベントはスキップ
+        if(F.status.length>0){
+            if(r.src==='accel'){
+                if(!F.status.includes(r.status) && !F.status.includes(r.stage)) return false;
+            } else if(r.src==='expo'){
+                if(!F.status.includes(r.status)) return false;
+            }
+            // イベントはステータス選択肢自体が非表示のためフィルター適用しない
+        }
+        if(F.person.length>0&&!F.person.includes(r.person)) return false;
+        if(F.expo.length>0&&!F.expo.includes(r.expoName)) return false;
+        if(F.industry.length>0&&!F.industry.includes(r.industry)) return false;
+        if(F.follow.length>0&&!F.follow.includes(r.follow)) return false;
+        if(F.decision.length>0&&!F.decision.includes(r.decision)) return false;
+        if(F.budget.length>0&&!F.budget.includes(r.budget)) return false;
+        if(F.phase.length>0&&r.src==='accel'&&!F.phase.includes(r.phase)) return false;
+        if(F.quarter.length>0&&!F.quarter.includes(r.quarter)) return false;
+        if(F.timing.length>0&&!F.timing.includes(r.timing)) return false;
+        if(F.stage.length>0&&r.src==='accel'&&!F.stage.includes(r.stage)) return false;
+        if(F.scale.length>0&&r.src==='expo'&&!F.scale.includes(r.scale)) return false;
+        // expanded search fields
+        if(q&&![r.name,r.company,r.person,r.name2||'',r.email||'',r.dept||'',r.memo||'',r.needs||''].some(s=>s.toLowerCase().includes(q))) return false;
+        return true;
+    });
+    // ソート
+    const PRIO_ORDER = {'高':0,'中':1,'低':2};
+    if(sortKey){
+        filtered.sort((a,b)=>{
+            let av = a[sortKey]||'', bv = b[sortKey]||'';
+            if(sortKey==='prio'){ av=PRIO_ORDER[av]??9; bv=PRIO_ORDER[bv]??9; return (av-bv)*sortDir; }
+            return String(av).localeCompare(String(bv),'ja')*sortDir;
+        });
+    }
+    // ソートインジケーター更新
+    ['name','prio','person','date'].forEach(k=>{
+        const el = document.getElementById('sh-'+k);
+        if(el) el.textContent = sortKey===k ? (sortDir===1?' ▲':' ▼') : '';
+    });
+
+    // ページネーション
+    const totalCount = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    if(currentPage > totalPages) currentPage = totalPages;
+    if(currentPage < 1) currentPage = 1;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const rows = filtered.slice(start, start + PAGE_SIZE);
+
+    // ページネーションUI更新
+    const pgBar = document.getElementById('paginationBar');
+    if(pgBar){
+        pgBar.style.display = totalPages <= 1 ? 'none' : 'flex';
+        document.getElementById('pageInfo').textContent = currentPage + ' / ' + totalPages + ' ページ';
+        document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+    }
+
+    document.getElementById('cnt').textContent=totalCount;
+    document.getElementById('k0').innerHTML=filtered.length+'<small>件</small>';
+    document.getElementById('k1').innerHTML=filtered.filter(d=>d.src==='accel').length+'<small>件</small>';
+    document.getElementById('k2').innerHTML=filtered.filter(d=>d.src==='expo').length+'<small>件</small>';
+    document.getElementById('k3').innerHTML=filtered.filter(d=>d.src==='event').length+'<small>件</small>';
+    document.getElementById('k4').innerHTML=filtered.filter(d=>d.prio==='高').length+'<small>件</small>';
+
+    // empty state
+    if(rows.length===0){
+        document.getElementById('tbody').innerHTML='<tr><td colspan="99" style="text-align:center;padding:48px;color:#94a3b8;">条件に一致するリードがありません</td></tr>';
+    } else {
+        document.getElementById('tbody').innerHTML=rows.map(r=>{
+            // ステータス列: アクセラは「案件状態 | ステージ」、展示会はステータス値、イベントは空欄
+            let statusCell;
+            if(r.src==='accel'){
+                const st = esc(r.status||'—');
+                const sg = esc(r.stage||'—');
+                statusCell = `<div style="font-size:.78rem;font-weight:600">${st} | ${sg}</div>`;
+            } else if(r.src==='expo'){
+                statusCell = `<span class="${stClass(r.status)}">${esc(r.status||'—')}</span>`;
+            } else {
+                statusCell = '<span style="color:var(--muted)">—</span>';
+            }
+            // 担当者列: アクセラはSS/AE名、展示会は応対者/引継担当、イベントは空欄
+            let personCell;
+            if(r.src==='accel'){
+                personCell = `<div class="av-row"><div class="av" style="${avStyle(r.person)}">${esc(r.person[0])}</div><div><div class="av-n">${esc(r.person)}</div><div class="av-r">${esc(r.role)}</div></div></div>`;
+            } else if(r.src==='expo'){
+                personCell = `<div class="av-row"><div class="av" style="${avStyle(r.person)}">${esc(r.person[0])}</div><div><div class="av-n">${esc(r.person)}</div><div class="av-r">${esc(r.role)}</div></div></div>`;
+            } else {
+                personCell = '<span style="color:var(--muted)">—</span>';
+            }
+            // 〆切列: アクセラのみ表示
+            const deadlineCell = r.src==='accel' ? `<div style="font-size:.78rem">${fmtDate(r.date)}</div>` : '<span style="color:var(--muted)">—</span>';
+            const extraCells = extraCols.map(c=>`<td style="font-size:.75rem;color:var(--sub);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.val(r))}</td>`).join('');
+            return `<tr onclick="openP(${r.id})" class="${selId===r.id?'sel':''}">
+                <td><div class="c-main">${esc(r.name)}</div>${r.name!==r.company?`<div class="c-sub">${esc(r.company)}</div>`:''}</td>
+                <td><span class="${srcBadge[r.src]}">${srcLabel[r.src]}</span></td>
+                <td><span class="${prioClass[r.prio]}">${esc(r.prio)}</span></td>
+                <td>${statusCell}</td>
+                <td>${personCell}</td>
+                <td>${deadlineCell}</td>
+                ${extraCells}
+            </tr>`;
+        }).join('');
+    }
+}
+
+function showDealModal(title, deals){
+    if(!deals) return;
+    _modalReturn = {title, deals}; // closeP()で戻れるよう保持
+    document.getElementById('deal-modal-title').textContent = title + '（'+deals.length+'件）';
+    if(!deals.length){
+        document.getElementById('deal-modal-list').innerHTML = '<div class="deal-modal-empty">該当案件なし</div>';
+    } else {
+        const rows = deals.map(r=>{
+            let statusCell;
+            if(r.src==='accel'){
+                statusCell = `<div style="font-size:.75rem;font-weight:600">${esc(r.status||'—')} | ${esc(r.stage||'—')}</div>`;
+            } else if(r.src==='expo'){
+                statusCell = `<span class="${stClass(r.status)}">${esc(r.status||'—')}</span>`;
+            } else {
+                statusCell = '<span style="color:var(--muted)">—</span>';
+            }
+            let personCell;
+            if(r.src==='accel'||r.src==='expo'){
+                personCell = `<div class="av-row"><div class="av" style="${avStyle(r.person)}">${esc((r.person||'?')[0])}</div><div><div class="av-n">${esc(r.person)}</div><div class="av-r">${esc(r.role||'')}</div></div></div>`;
+            } else {
+                personCell = '<span style="color:var(--muted)">—</span>';
+            }
+            const deadlineCell = r.src==='accel' ? `<div style="font-size:.75rem">${fmtDate(r.date)}</div>` : '<span style="color:var(--muted)">—</span>';
+            return `<tr onclick="openPFromModal(${r.id})">
+                <td><div class="c-main">${esc(r.name)}</div>${r.name!==r.company?`<div class="c-sub">${esc(r.company)}</div>`:''}</td>
+                <td><span class="${srcBadge[r.src]}">${srcLabel[r.src]}</span></td>
+                <td><span class="${prioClass[r.prio]}">${esc(r.prio)}</span></td>
+                <td>${statusCell}</td>
+                <td>${personCell}</td>
+                <td>${deadlineCell}</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('deal-modal-list').innerHTML = `
+        <table class="deal-modal-table">
+            <thead><tr>
+                <th>案件名</th><th>ソース</th><th>優先度</th><th>ステータス</th><th>担当者</th><th>〆切</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+    }
+    document.getElementById('deal-modal').style.display = 'flex';
+}
+function openPFromModal(id){
+    // モーダルを一時的に隠してパネルを開く（_modalReturnは保持したまま）
+    document.getElementById('deal-modal').style.display = 'none';
+    openP(id);
+}
+function closeDealModal(e){
+    if(e.target===e.currentTarget){
+        _modalReturn = null; // オーバーレイ直接クリックは完全に閉じる
+        e.currentTarget.style.display='none';
+    }
+}
+
+function openP(id){
+    const r=DATA.find(d=>d.id===id); if(!r) return;
+    selId=id; render();
+    document.getElementById('pt').textContent=r.name;
+    let h='';
+
+    function pRow(label, value, isLink){
+        const v = (value===undefined||value===null||value===''||value==='—') ? '—' : value;
+        let display;
+        if(v==='—'){
+            display = '<span style="color:var(--muted)">—</span>';
+        } else if(isLink==='mail'){
+            display = `<a href="mailto:${esc(v)}" style="color:var(--blue);text-decoration:none">${esc(v)}</a>`;
+        } else if(isLink==='url'){
+            display = `<a href="${esc(v)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">${esc(v)}</a>`;
+        } else {
+            display = esc(v);
+        }
+        return `<div class="p-row"><div class="p-k">${esc(label)}</div><div class="p-v">${display}</div></div>`;
+    }
+    function pCb(label, val){ // チェックボックス表示
+        return `<div class="p-row"><div class="p-k">${esc(label)}</div><div class="p-v">${val?'✅ はい':'☐ いいえ'}</div></div>`;
+    }
+
+    if(r.src==='accel'){
+        // 基本情報: OI案件名・企業名・案件分類・サイト・優先度
+        h+=`<div class="p-sec"><div class="p-sec-t">基本情報</div>
+            ${pRow('OI案件名', r.name)}
+            ${pRow('企業名', r.company)}
+            ${pRow('案件分類', r.classification)}
+            ${pRow('サイト', r.site)}
+            <div class="p-row"><div class="p-k">優先度</div><div class="p-v"><span class="${prioClass[r.prio]}">${esc(r.prio||'—')}</span></div></div>
+        </div>`;
+        // 進捗: ステージ・フェーズ・案件状態
+        h+=`<div class="p-sec"><div class="p-sec-t">進捗</div>
+            <div class="p-row"><div class="p-k">ステージ</div><div class="p-v"><span class="${stClass(r.stage)}">${esc(r.stage||'—')}</span></div></div>
+            ${pRow('フェーズ', r.phase)}
+            ${pRow('案件状態', r.status)}
+        </div>`;
+        // 提案: 提案価値・提案効率・金額支援<MUST>・<OR条件>
+        h+=`<div class="p-sec"><div class="p-sec-t">提案</div>
+            ${pRow('提案価値', r.value)}
+            ${pRow('提案効率', r.efficiency)}
+            ${pRow('金額支援＜MUST＞', r.amount)}
+            ${pRow('＜OR条件＞', r.orCondition)}
+        </div>`;
+        // 担当者: SS・AE・レビュワー・SM
+        h+=`<div class="p-sec"><div class="p-sec-t">担当者</div>
+            <div class="p-row"><div class="p-k">担当</div><div class="p-v"><div class="av-row"><div class="av" style="${avStyle(r.person)}">${esc(r.person[0])}</div>${esc(r.person)}（${esc(r.role)}）</div></div></div>
+            ${pRow('SS', r.ss)}
+            ${pRow('AE', r.ae)}
+            ${pRow('レビュワー', r.reviewer)}
+            ${pRow('SM', r.sm)}
+        </div>`;
+        // 日程: 早期〆切・〆切・〆切まで
+        h+=`<div class="p-sec"><div class="p-sec-t">日程</div>
+            ${pRow('早期〆切', r.earlyDeadline ? fmtDate(r.earlyDeadline) : null)}
+            ${pRow('〆切', fmtDate(r.date))}
+            ${pRow('〆切まで', r.daysLeft)}
+        </div>`;
+        // 準備: 事前コンタクト・プログラム概要・keep・problem・try
+        h+=`<div class="p-sec"><div class="p-sec-t">準備</div>
+            ${pRow('事前コンタクト', r.contact)}
+            ${pRow('プログラム概要', r.programDesc)}
+            ${pRow('keep', r.keep)}
+            ${pRow('problem', r.problem)}
+            ${pRow('try', r.try)}
+        </div>`;
+        // リンク: リンク・応募資料・案件別Docs
+        h+=`<div class="p-sec"><div class="p-sec-t">リンク</div>
+            ${pRow('リンク', r.link, 'url')}
+            ${pRow('応募資料', r.document, 'url')}
+            ${pRow('案件別Docs', r.docs, 'url')}
+        </div>`;
+        // メモ
+        h+=`<div class="p-sec"><div class="p-sec-t">メモ</div><div class="p-memo">${esc(r.memo||'なし')}</div></div>`;
+        // メタデータ: 作成日時・Quarter・Month・year
+        h+=`<div class="p-sec"><div class="p-sec-t">メタデータ</div>
+            ${pRow('作成日時', r.createdAt ? fmtDate(r.createdAt) : null)}
+            ${pRow('Quarter', r.quarter)}
+            ${pRow('Month', r.month)}
+            ${pRow('year', r.year)}
+        </div>`;
+    } else if(r.src==='expo'){
+        // 基本情報: 企業名・氏名・役職・部署・連絡先
+        h+=`<div class="p-sec"><div class="p-sec-t">基本情報</div>
+            ${pRow('企業名', r.company)}
+            ${pRow('氏名', r.name2)}
+            ${pRow('役職', r.role2)}
+            ${pRow('部署', r.dept)}
+            ${pRow('連絡先', r.contact)}
+        </div>`;
+        // フォロー状況: ステータス・優先度・各チェックボックス
+        h+=`<div class="p-sec"><div class="p-sec-t">フォロー状況</div>
+            ${pRow('ステータス', r.status)}
+            <div class="p-row"><div class="p-k">優先度</div><div class="p-v"><span class="${prioClass[r.prio]}">${esc(r.prio||'—')}</span></div></div>
+            ${pCb('リード', r.isLead)}
+            ${pCb('送付済み', r.follow==='送付済み'||r.status==='送付済')}
+            ${pCb('返信あり', r.follow==='返信あり'||r.status==='返信あり')}
+            ${pCb('アポ取得', r.follow==='アポ取得'||r.status==='アポ取得')}
+            ${pCb('フォロー送付依頼', r.followRequest)}
+            ${pCb('メール作成', r.mailCreated)}
+            ${pRow('メール文', r.mailText)}
+        </div>`;
+        // 担当者: 応対者・引き継ぎ担当
+        h+=`<div class="p-sec"><div class="p-sec-t">担当者</div>
+            <div class="p-row"><div class="p-k">担当</div><div class="p-v"><div class="av-row"><div class="av" style="${avStyle(r.person)}">${esc(r.person[0])}</div>${esc(r.person)}（${esc(r.role)}）</div></div></div>
+            ${pRow('応対者', r.respondent)}
+            ${pRow('引き継ぎ担当', r.handover)}
+        </div>`;
+        // 企業属性: 業種・規模・決裁権
+        h+=`<div class="p-sec"><div class="p-sec-t">企業属性</div>
+            ${pRow('業種', r.industry)}
+            ${pRow('規模', r.scale)}
+            ${pRow('決裁権', r.decision)}
+        </div>`;
+        // ニーズ・商談
+        h+=`<div class="p-sec"><div class="p-sec-t">ニーズ・商談</div>
+            ${pRow('参加目的', r.purpose)}
+            ${pRow('ニーズ', r.needs)}
+            ${pRow('ニーズ詳細', r.needsDetail)}
+            ${pRow('すでに導入している技術', r.existingTech)}
+            ${pRow('興味を持っている技術やサービス', r.interestedTech)}
+            ${pRow('新しい技術の導入予定', r.newTechPlan)}
+            ${pRow('意思決定基準', r.decisionCriteria)}
+            ${pRow('予算規模', r.budget)}
+            ${pRow('導入時期', r.timing)}
+        </div>`;
+        // 展示会情報
+        h+=`<div class="p-sec"><div class="p-sec-t">展示会情報</div>
+            ${pRow('展示会名', r.expoName)}
+            ${pRow('日付', fmtDate(r.date))}
+        </div>`;
+        // 名刺
+        h+=`<div class="p-sec" id="p-card-sec"><div class="p-sec-t">名刺</div>`;
+        if(r.cardImage){
+            h+=`<div class="card-img-panel" id="p-card-panel"><img id="p-card-img" alt="名刺"></div>
+                <div style="font-size:.65rem;color:var(--muted);margin-top:5px;text-align:center;">クリックで拡大</div>`;
+        } else {
+            h+='<div style="color:var(--muted);font-size:.78rem">なし</div>';
+        }
+        h+='</div>';
+        // メモ
+        h+=`<div class="p-sec"><div class="p-sec-t">メモ</div><div class="p-memo">${esc(r.memo||'なし')}</div></div>`;
+    } else {
+        // イベント
+        // 基本情報: 企業・団体名・氏名・部署・役職
+        h+=`<div class="p-sec"><div class="p-sec-t">基本情報</div>
+            ${pRow('企業・団体名', r.company)}
+            ${pRow('氏名', r.name2)}
+            ${pRow('部署', r.dept)}
+            ${pRow('役職', r.role2)}
+        </div>`;
+        // 連絡先: メール・電話・携帯・住所・URL
+        h+=`<div class="p-sec"><div class="p-sec-t">連絡先</div>
+            ${pRow('メール', r.contact, r.contact&&r.contact!=='—'?'mail':null)}
+            ${pRow('電話', r.tel)}
+            ${pRow('携帯', r.mobile)}
+            ${pRow('住所', r.address)}
+            ${pRow('URL', r.url, r.url&&r.url!=='—'?'url':null)}
+        </div>`;
+        // フォロー状況
+        h+=`<div class="p-sec"><div class="p-sec-t">フォロー状況</div>
+            ${pRow('フォロー優先度', r.prio)}
+            ${pRow('読取ステータス', r.readStatus)}
+        </div>`;
+        // メモ
+        h+=`<div class="p-sec"><div class="p-sec-t">メモ</div><div class="p-memo">${esc(r.memo||'なし')}</div></div>`;
+        // 名刺画像（イベントにも名刺がある場合）
+        if(r.cardImage){
+            h+=`<div class="p-sec" id="p-card-sec"><div class="p-sec-t">名刺画像</div>
+                <div class="card-img-panel" id="p-card-panel"><img id="p-card-img" alt="名刺"></div>
+                <div style="font-size:.65rem;color:var(--muted);margin-top:5px;text-align:center;">クリックで拡大</div>
+            </div>`;
+        }
+    }
+    document.getElementById('pb').innerHTML=h;
+    // C5: set image src via DOM property (safe assignment)
+    if(r.cardImage){
+        const cardImg = document.getElementById('p-card-img');
+        if(cardImg){
+            cardImg.src = r.cardImage;
+            cardImg.parentElement.onclick = function(){ openLightbox(r.cardImage); };
+        }
+    }
+    document.getElementById('panel').classList.add('open');
+    document.getElementById('ov').classList.add('show');
+}
+
+function closeP(){
+    selId=null;
+    document.getElementById('panel').classList.remove('open');
+    document.getElementById('ov').classList.remove('show');
+    render();
+    // モーダルから開いた場合はモーダルに戻る
+    if(_modalReturn){
+        const {title, deals} = _modalReturn;
+        _modalReturn = null;
+        showDealModal(title, deals);
+    }
+}
+
+// ━━ VIEW SWITCHING ━━
+const viewTitles = {
+    list: '全リード一覧',
+    accel: 'アクセラ ボード',
+    expo: '展示会 ボード',
+    event: 'イベント ボード',
+    report: 'レポート',
+    calendar: '〆切カレンダー'
+};
+
+const chartInstances = {};
+
+let _currentView = 'list';
+function switchView(viewId, sidebarItem){
+    _currentView = viewId;
+    // update sidebar
+    document.querySelectorAll('.s-item').forEach(el=>el.classList.remove('on'));
+    sidebarItem.classList.add('on');
+    // update views
+    document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+    document.getElementById('view-'+viewId).classList.add('active');
+    // update header title
+    document.getElementById('pageTitle').textContent = viewTitles[viewId] || viewId;
+    // show/hide search box only on list view
+    document.getElementById('searchBox').style.display = viewId === 'list' ? '' : 'none';
+    // initialize analytics
+    if(viewId === 'accel'){ initAccelCharts(); }
+    if(viewId === 'expo'){ initExpoCharts(); }
+    if(viewId === 'event'){ initEventCharts(); }
+    if(viewId === 'report'){ renderReport(); }
+    // close detail panel if open
+    closeP();
+}
+
+// ━━ CHART HELPERS ━━
+const PALETTE_PIE   = ['#2563EB','#F59E0B','#10B981','#EF4444','#8B5CF6','#EC4899','#14B8A6'];
+const PALETTE_BAR   = ['#2563EB','#7C3AED','#059669','#DC2626'];
+const PIE_BG_ALPHA  = 0.85;
+
+function countBy(arr, key){
+    const map = {};
+    arr.forEach(r=>{ const v=r[key]||'不明'; map[v]=(map[v]||0)+1; });
+    return map;
+}
+
+function makeBarData(map, color='#2563EB'){
+    const labels = Object.keys(map);
+    const data   = Object.values(map);
+    return { labels, datasets:[{ data, backgroundColor: color, borderRadius:4, barThickness:18 }] };
+}
+
+function makePieData(map){
+    const labels = Object.keys(map);
+    const data   = Object.values(map);
+    const bg     = PALETTE_PIE.slice(0, labels.length).map(c=>c+'d9');
+    return { labels, datasets:[{ data, backgroundColor: bg, borderWidth:1, borderColor:'#fff' }] };
+}
+
+const COMMON_PIE_OPTS = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'right', labels:{ font:{size:11}, boxWidth:12, padding:10 } } }
+};
+const COMMON_BAR_OPTS = (indexAxis='x') => ({
+    responsive:true, maintainAspectRatio:false, indexAxis,
+    plugins:{ legend:{ display:false } },
+    scales:{
+        x:{ grid:{display:indexAxis==='y'}, ticks:{font:{size:11}, stepSize:1, precision:0} },
+        y:{ grid:{display:indexAxis==='x'}, ticks:{font:{size:11}, stepSize:1, precision:0} }
+    }
+});
+
+// ━━ ACCEL CHARTS ━━
+function initAccelCharts(){
+    ['accel-status','accel-person','accel-stage','accel-prio','accel-m-apply','accel-m-deal','accel-m-adopt'].forEach(k=>{
+        if(chartInstances[k]){ chartInstances[k].destroy(); delete chartInstances[k]; }
+    });
+    const ac = DATA.filter(d=>d.src==='accel');
+
+    // KPIs
+    const inProgressDeals = ac.filter(d=>['応募中','審査中','準備中','進行中'].includes(d.status));
+    const adoptedDeals    = ac.filter(d=>d.status==='完了'||d.stage==='採択！！');
+    const inProgress = inProgressDeals.length;
+    const adopted    = adoptedDeals.length;
+    const adoptRate  = ac.length > 0 ? Math.round(adopted/ac.length*100) : 0;
+    const now = new Date();
+    const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const ymLabel = now.getFullYear()+'年'+(now.getMonth()+1)+'月';
+    const thisMonthDeals = ac.filter(d=>d.date&&d.date.startsWith(ym));
+    const thisMonth  = thisMonthDeals.length;
+    window._acKpiDeals = { all: ac, inProgress: inProgressDeals, adopted: adoptedDeals, thisMonth: thisMonthDeals };
+    document.getElementById('ac-k0').innerHTML = ac.length+'<small>件</small>';
+    document.getElementById('ac-k1').innerHTML = inProgress+'<small>件</small>';
+    document.getElementById('ac-k2').innerHTML = adoptRate+'<small>%</small>';
+    document.getElementById('ac-k2-sub').textContent = `採択 ${adopted}件 / 総 ${ac.length}件`;
+    document.getElementById('ac-k3').innerHTML = thisMonth+'<small>件</small>';
+    document.getElementById('ac-k3-label').textContent = ymLabel;
+
+    // Chart 1: 案件状態 (doughnut)
+    const statusMap = countBy(ac,'status');
+    const statusLabels = Object.keys(statusMap);
+    const statusColors = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B','#0EA5E9','#F97316'];
+    chartInstances['accel-status'] = new Chart(document.getElementById('ch-accel-status'), {
+        type:'doughnut',
+        data:{ labels:statusLabels, datasets:[{ data:statusLabels.map(l=>statusMap[l]), backgroundColor:statusColors.slice(0,statusLabels.length), borderWidth:2, hoverOffset:6 }] },
+        options:{ ...COMMON_PIE_OPTS, onClick:(evt,els)=>{ if(!els.length) return; const lbl=statusLabels[els[0].index]; showDealModal('案件状態: '+lbl, ac.filter(d=>d.status===lbl)); } }
+    });
+
+    // Chart 2: ステージ分布 (doughnut)
+    const stageOrder = ['リード','接触済','提出済','商談化','採択！！'];
+    const stageMap = {};
+    stageOrder.forEach(s=>{ stageMap[s] = ac.filter(d=>d.stage===s).length; });
+    const stageColors = ['#94A3B8','#64748B','#60A5FA','#2563EB','#10B981'];
+    chartInstances['accel-stage'] = new Chart(document.getElementById('ch-accel-stage'), {
+        type:'doughnut',
+        data:{ labels:stageOrder, datasets:[{ data:stageOrder.map(s=>stageMap[s]), backgroundColor:stageColors, borderWidth:2, hoverOffset:6 }] },
+        options:{ ...COMMON_PIE_OPTS, onClick:(evt,els)=>{ if(!els.length) return; const lbl=stageOrder[els[0].index]; showDealModal('ステージ: '+lbl, ac.filter(d=>d.stage===lbl)); } }
+    });
+
+    // Chart 3: 担当者別件数（優先度別積み上げ, clickable by person）
+    const acPersons = [...new Set(ac.map(d=>d.person).filter(Boolean))];
+    chartInstances['accel-person'] = new Chart(document.getElementById('ch-accel-person'), {
+        type:'bar',
+        data:{
+            labels: acPersons,
+            datasets:[
+                {label:'高',backgroundColor:'#EF4444',data:acPersons.map(p=>ac.filter(d=>d.person===p&&d.prio==='高').length),stack:'ap'},
+                {label:'中',backgroundColor:'#F59E0B',data:acPersons.map(p=>ac.filter(d=>d.person===p&&d.prio==='中').length),stack:'ap'},
+                {label:'低',backgroundColor:'#94A3B8',data:acPersons.map(p=>ac.filter(d=>d.person===p&&d.prio==='低').length),stack:'ap'},
+            ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{size:11}}}},onClick:(evt,els)=>{ if(!els.length) return; const p=acPersons[els[0].index]; showDealModal('担当者: '+p, ac.filter(d=>d.person===p)); }}
+    });
+
+    // Chart 4: 優先度別件数 (horizontal bar, clickable)
+    const prioMap = {'高':0,'中':0,'低':0};
+    ac.forEach(d=>{ if(prioMap[d.prio]!==undefined) prioMap[d.prio]++; });
+    const acPrioLabels = Object.keys(prioMap);
+    chartInstances['accel-prio'] = new Chart(document.getElementById('ch-accel-prio'), {
+        type:'bar',
+        data:{labels:acPrioLabels,datasets:[{data:Object.values(prioMap),backgroundColor:['#EF4444','#F59E0B','#94A3B8'],borderRadius:4,barThickness:26}]},
+        options:{...COMMON_BAR_OPTS('y'),plugins:{legend:{display:false}},onClick:(evt,els)=>{ if(!els.length) return; const lbl=acPrioLabels[els[0].index]; showDealModal('優先度: '+lbl, ac.filter(d=>d.prio===lbl)); }}
+    });
+
+    // ━━ PIPELINE ANALYSIS (Sprint 1) ━━
+
+    // Cumulative stage counts and deal lists
+    const STAGE_DEFS = [
+        { key:'リード',  label:'リード',  include:['リード','接触済','提出済','商談化','採択！！'], color:'#475569', desc:'以上のステージ含む' },
+        { key:'接触済',  label:'接触済',  include:['接触済','提出済','商談化','採択！！'],          color:'#334155', desc:'以上のステージ含む' },
+        { key:'提出済',  label:'提出済',  include:['提出済','商談化','採択！！'],                   color:'#3B82F6', desc:'以上のステージ含む' },
+        { key:'商談化',  label:'商談化',  include:['商談化','採択！！'],                            color:'#1D4ED8', desc:'以上のステージ含む' },
+        { key:'採択',    label:'採択',    include:['採択！！'],                                    color:'#059669', desc:'採択！！のみ' },
+    ];
+
+    const cardsEl = document.getElementById('ac-stage-cards');
+    if(cardsEl){
+        window._acStageDeals = {};
+        cardsEl.innerHTML = STAGE_DEFS.map(def=>{
+            const deals = ac.filter(d=>def.include.includes(d.stage));
+            window._acStageDeals[def.key] = deals;
+            const count = deals.length;
+            const maxShow = 10;
+            const shown = deals.slice(0,maxShow);
+            const more = count - maxShow;
+            const tooltipItems = shown.map(d=>`<li>${d.name}</li>`).join('');
+            const tooltipMore = more > 0 ? `<div class="tooltip-more">他${more}件</div>` : '';
+            return `
+            <div class="ac-stage-card" style="border-top:3px solid ${def.color};cursor:pointer" onclick="showDealModal('${def.label}', window._acStageDeals['${def.key}'])">
+                <div class="ac-stage-card-label">${def.label}</div>
+                <div class="ac-stage-card-count" style="color:${def.color}">${count}<small style="font-size:.9rem;font-weight:700">件</small></div>
+                <div class="ac-stage-card-desc">${def.desc}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // Funnel: CSS-based trapezoid funnel
+    const funnelLabels = ['リード','接触済','提出済','商談化','採択'];
+    const funnelCounts = STAGE_DEFS.map(def=>ac.filter(d=>def.include.includes(d.stage)).length);
+    const funnelColors = ['#93C5FD','#60A5FA','#3B82F6','#2563EB','#1D4ED8'];
+    const maxFunnel = Math.max(...funnelCounts, 1);
+    const funnelEl = document.getElementById('ac-funnel-visual');
+    if(funnelEl){
+        const MAX_INSET = 42;
+        const insets = funnelCounts.map(c => (1 - c/maxFunnel) * MAX_INSET);
+        funnelEl.innerHTML = funnelLabels.map((lbl,i)=>{
+            const leftIn = insets[i];
+            const rightIn = i < funnelLabels.length-1 ? insets[i+1] : insets[i];
+            const clip = `polygon(0 ${leftIn.toFixed(1)}%, 100% ${rightIn.toFixed(1)}%, 100% ${(100-rightIn).toFixed(1)}%, 0 ${(100-leftIn).toFixed(1)}%)`;
+            return `<div class="ac-funnel-col" style="cursor:pointer" onclick="showDealModal('${lbl}', window._acStageDeals['${funnelLabels[i]}'])">
+                <div class="ac-funnel-shape" style="background:${funnelColors[i]};clip-path:${clip}"></div>
+                <div class="ac-funnel-text">
+                    <span class="ac-funnel-count">${funnelCounts[i]}件</span>
+                    <span class="ac-funnel-label">${lbl}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ━━ SPRINT 2: 年間目標 vs 実績 ━━
+    const GOAL_KEY = 'accel_annual_goals';
+    function loadGoals(){ try{ return JSON.parse(localStorage.getItem(GOAL_KEY))||{}; }catch(e){ return {}; } }
+    function saveGoal(k,v){ const g=loadGoals(); g[k]=v; localStorage.setItem(GOAL_KEY,JSON.stringify(g)); }
+
+    const goalDefs = [
+        { key:'apply',   label:'応募件数', include:['提出済','商談化','採択！！'], color:'#3B82F6' },
+        { key:'deal',    label:'商談化件数', include:['商談化','採択！！'],         color:'#2563EB' },
+        { key:'adopt',   label:'受注件数',  include:['採択！！'],                  color:'#10B981' },
+    ];
+    const goals = loadGoals();
+    const goalActuals = goalDefs.map(def=>ac.filter(d=>def.include.includes(d.stage)).length);
+
+    const goalCardsEl = document.getElementById('ac-goal-cards');
+    if(goalCardsEl){
+        goalCardsEl.innerHTML = goalDefs.map((def,i)=>{
+            const actual = goalActuals[i];
+            const target = goals[def.key] || 10;
+            const pct = Math.min(Math.round(actual/target*100),100);
+            return `
+            <div class="ac-goal-card">
+                <div class="ac-goal-card-label">${def.label}</div>
+                <div class="ac-goal-actual" style="color:${def.color}">${actual}<small style="font-size:.9rem;font-weight:700">件</small></div>
+                <div class="ac-goal-target-row">
+                    目標：<input class="ac-goal-edit" id="ac-goal-${def.key}" type="number" min="0" value="${target}" title="クリックして目標を編集">件
+                </div>
+                <div class="ac-goal-bar-wrap"><div class="ac-goal-bar" id="ac-goal-bar-${def.key}" style="width:${pct}%;background:${def.color}"></div></div>
+                <div class="ac-goal-pct" style="color:${def.color}">${pct}%</div>
+            </div>`;
+        }).join('');
+
+        // Attach change handlers for goal editing
+        goalDefs.forEach((def,i)=>{
+            const input = document.getElementById(`ac-goal-${def.key}`);
+            if(!input) return;
+            const updateBar = ()=>{
+                const t = Math.max(parseInt(input.value)||1, 1);
+                saveGoal(def.key, t);
+                const actual = goalActuals[i];
+                const pct = Math.min(Math.round(actual/t*100),100);
+                const bar = document.getElementById(`ac-goal-bar-${def.key}`);
+                if(bar) bar.style.width = pct+'%';
+                const pctEl = input.closest('.ac-goal-card').querySelector('.ac-goal-pct');
+                if(pctEl) pctEl.textContent = pct+'%';
+            };
+            input.addEventListener('change', updateBar);
+            input.addEventListener('blur', updateBar);
+        });
+    }
+
+    // ━━ SPRINT 2: 担当者ランキング ━━
+    const persons = [...new Set(ac.map(d=>d.person).filter(Boolean))];
+    const MEDALS = ['🥇','🥈','🥉'];
+
+    function buildRankCol(persons, ac, filterFn){
+        return persons
+            .map(p=>({ person:p, count:ac.filter(d=>d.person===p&&filterFn(d)).length }))
+            .sort((a,b)=>b.count-a.count)
+            .slice(0,3);
+    }
+
+    const rankAssigned = buildRankCol(persons, ac, ()=>true);
+    const rankDeal     = buildRankCol(persons, ac, d=>['商談化','採択！！'].includes(d.stage));
+    const rankAdopt    = buildRankCol(persons, ac, d=>d.stage==='採択！！');
+
+    const rankWrap = document.getElementById('ac-ranking-wrap');
+    if(rankWrap){
+        const buildTable = (title, rankData) => {
+            const rows = rankData.map((r,i)=>`
+                <div class="ac-rank-row">
+                    <span class="ac-rank-medal">${i<3?MEDALS[i]:i+1}</span>
+                    <span class="ac-rank-name">${r.person}</span>
+                    <span class="ac-rank-count">${r.count}</span><span class="ac-rank-unit">件</span>
+                </div>`).join('');
+            return `<div>
+                <div class="ac-rank-col-title">${title}</div>
+                <div class="ac-rank-card">${rows}</div>
+            </div>`;
+        };
+        rankWrap.innerHTML = `<div class="ac-rank-3col">
+            ${buildTable('担当数', rankAssigned)}
+            ${buildTable('商談化数', rankDeal)}
+            ${buildTable('採択数', rankAdopt)}
+        </div>`;
+    }
+
+    // ━━ SPRINT 3: 月次トレンド (3 separate charts) ━━
+    ['accel-m-apply','accel-m-deal','accel-m-adopt'].forEach(k=>{
+        if(chartInstances[k]){ chartInstances[k].destroy(); delete chartInstances[k]; }
+    });
+
+    // Build past 12 months labels (YYYY-MM)
+    const now3 = new Date();
+    const monthLabels = [];
+    const monthKeys = [];
+    for(let i=11;i>=0;i--){
+        const md = new Date(now3.getFullYear(), now3.getMonth()-i, 1);
+        const key = md.getFullYear()+'-'+String(md.getMonth()+1).padStart(2,'0');
+        const label = (md.getMonth()+1)+'月';
+        monthKeys.push(key);
+        monthLabels.push(label);
+    }
+
+    const applyByMonth  = monthKeys.map(m=>ac.filter(d=>d.date&&d.date.startsWith(m)&&['提出済','商談化','採択！！'].includes(d.stage)).length);
+    const dealByMonth   = monthKeys.map(m=>ac.filter(d=>d.date&&d.date.startsWith(m)&&['商談化','採択！！'].includes(d.stage)).length);
+    const adoptByMonth  = monthKeys.map(m=>ac.filter(d=>d.date&&d.date.startsWith(m)&&d.stage==='採択！！').length);
+
+    const barTopLabelPlugin = {
+        id:'barTopLabel',
+        afterDraw(chart){
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach((ds,i)=>{
+                chart.getDatasetMeta(i).data.forEach((bar,idx)=>{
+                    const val = ds.data[idx];
+                    if(val===0) return;
+                    ctx.save();
+                    ctx.fillStyle='#475569';
+                    ctx.font='bold 9px sans-serif';
+                    ctx.textAlign='center';
+                    ctx.textBaseline='bottom';
+                    ctx.fillText(val, bar.x, bar.y-2);
+                    ctx.restore();
+                });
+            });
+        }
+    };
+    const monthlyBarOpts = { responsive:true, maintainAspectRatio:false, layout:{padding:{top:14}}, plugins:{ legend:{display:false} }, scales:{ x:{ticks:{font:{size:10}},grid:{display:false}}, y:{beginAtZero:true,ticks:{stepSize:1,precision:0,font:{size:10}}} } };
+    [[`accel-m-apply`, applyByMonth, '#93C5FD'], [`accel-m-deal`, dealByMonth, '#2563EB'], [`accel-m-adopt`, adoptByMonth, '#10B981']].forEach(([key, data, color])=>{
+        chartInstances[key] = new Chart(document.getElementById('ch-'+key), {
+            type:'bar',
+            data:{ labels:monthLabels, datasets:[{ data, backgroundColor:color, borderRadius:3, barPercentage:.75 }] },
+            options: monthlyBarOpts,
+            plugins:[barTopLabelPlugin]
+        });
+    });
+}
+
+// ━━ EXPO CHARTS ━━
+function initExpoCharts(){
+    ['expo-name','expo-follow','expo-industry'].forEach(k=>{
+        if(chartInstances[k]){ chartInstances[k].destroy(); delete chartInstances[k]; }
+    });
+    const ex = DATA.filter(d=>d.src==='expo');
+
+    // KPIs
+    const apoDeals    = ex.filter(d=>d.status==='アポ取得'||d.follow==='アポ取得');
+    const followDeals = ex.filter(d=>d.status==='フォロー中');
+    const newDeals    = ex.filter(d=>d.status==='新規');
+    const apo     = apoDeals.length;
+    const apoRate = ex.length > 0 ? Math.round(apo/ex.length*100) : 0;
+    const follow  = followDeals.length;
+    const newLead = newDeals.length;
+    window._exKpiDeals = { all: ex, apo: apoDeals, follow: followDeals, newLead: newDeals };
+    document.getElementById('ex-k0').innerHTML = ex.length+'<small>件</small>';
+    document.getElementById('ex-k1').innerHTML = apoRate+'<small>%</small>';
+    document.getElementById('ex-k1-sub').textContent = `アポ ${apo}件 / 全 ${ex.length}件`;
+    document.getElementById('ex-k2').innerHTML = follow+'<small>件</small>';
+    document.getElementById('ex-k3').innerHTML = newLead+'<small>件</small>';
+
+    // ━━ フォロー経過日数 ━━
+    const followupEl = document.getElementById('ex-followup-wrap');
+    if(followupEl){
+        const today = new Date(); today.setHours(0,0,0,0);
+        const targets = ex
+            .filter(d=>d.status!=='アポ取得'&&d.follow!=='アポ取得')
+            .map(d=>{
+                const base = new Date(d.date||''); base.setHours(0,0,0,0);
+                const days = isNaN(base) ? null : Math.floor((today-base)/86400000);
+                return {...d, days};
+            })
+            .filter(d=>d.days!==null)
+            .sort((a,b)=>b.days-a.days);
+        if(targets.length===0){
+            followupEl.innerHTML='<p style="color:var(--muted);font-size:.82rem;padding:8px">全リード対応済み ✓</p>';
+        } else {
+            followupEl.innerHTML=`<table class="ex-followup-table">
+                <thead><tr><th>企業名</th><th>担当者</th><th>フォロー段階</th><th>経過日数</th></tr></thead>
+                <tbody>${targets.map(d=>{
+                    const cls = d.days<=7?'green':d.days<=14?'yellow':'red';
+                    return `<tr onclick="openP(${d.id})">
+                        <td>${d.name||d.company||'—'}</td>
+                        <td>${d.person||'—'}</td>
+                        <td>${d.follow||d.status||'—'}</td>
+                        <td><span class="ex-days-badge ${cls}">${d.days}日</span></td>
+                    </tr>`;
+                }).join('')}</tbody>
+            </table>`;
+        }
+    }
+
+    // ━━ 担当者別フォロー状況 ━━
+    const personWrapEl = document.getElementById('ex-person-wrap');
+    if(personWrapEl){
+        const persons = [...new Set(ex.map(d=>d.person).filter(Boolean))];
+        const personRows = persons.map(p=>{
+            const pDeals = ex.filter(d=>d.person===p);
+            const newC   = pDeals.filter(d=>d.status==='新規').length;
+            const followC= pDeals.filter(d=>d.status==='フォロー中').length;
+            const apoC   = pDeals.filter(d=>d.status==='アポ取得'||d.follow==='アポ取得').length;
+            return {p, pDeals, newC, followC, apoC};
+        }).sort((a,b)=>b.newC-a.newC);
+        window._exPersonDeals = {};
+        personRows.forEach(r=>{ window._exPersonDeals[r.p]=r.pDeals; });
+        personWrapEl.innerHTML=`<table class="ex-person-table">
+            <thead><tr><th>担当者</th><th>未着手</th><th>フォロー中</th><th>アポ取得</th><th>合計</th></tr></thead>
+            <tbody>${personRows.map(r=>`<tr onclick="showDealModal('担当者: ${r.p}', window._exPersonDeals['${r.p}'])">
+                <td class="ex-person-name">${r.p}</td>
+                <td><span class="ex-status-pill new">${r.newC}</span></td>
+                <td><span class="ex-status-pill follow">${r.followC}</span></td>
+                <td><span class="ex-status-pill apo">${r.apoC}</span></td>
+                <td style="color:var(--muted);font-size:.75rem">${r.pDeals.length}件</td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    // ━━ 規模別件数カード ━━
+    const SCALE_DEFS = [
+        { key:'大規模',       color:'#1D4ED8' },
+        { key:'中規模',       color:'#3B82F6' },
+        { key:'小規模',       color:'#60A5FA' },
+        { key:'スタートアップ', color:'#93C5FD' },
+    ];
+    const scaleCardsEl = document.getElementById('ex-scale-cards');
+    if(scaleCardsEl){
+        window._exScaleDeals = {};
+        scaleCardsEl.innerHTML = SCALE_DEFS.map(def=>{
+            const deals = ex.filter(d=>d.scale===def.key);
+            window._exScaleDeals[def.key] = deals;
+            return `<div class="ac-stage-card" style="border-top:3px solid ${def.color};cursor:pointer" onclick="showDealModal('規模: ${def.key}', window._exScaleDeals['${def.key}'])">
+                <div class="ac-stage-card-label">${def.key}</div>
+                <div class="ac-stage-card-count" style="color:${def.color}">${deals.length}<small style="font-size:.9rem;font-weight:700">件</small></div>
+            </div>`;
+        }).join('');
+    }
+
+    // value label plugin (reused for expo charts)
+    const expoBarLabelPlugin = {
+        id:'expoBarLabel',
+        afterDraw(chart){
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach((ds,i)=>{
+                chart.getDatasetMeta(i).data.forEach((bar,idx)=>{
+                    const val = ds.data[idx];
+                    if(val===0) return;
+                    ctx.save();
+                    ctx.fillStyle='#475569';
+                    ctx.font='bold 9px sans-serif';
+                    ctx.textAlign='center';
+                    ctx.textBaseline='bottom';
+                    ctx.fillText(val, bar.x, bar.y-2);
+                    ctx.restore();
+                });
+            });
+        }
+    };
+
+    // Chart 1: 展示会別リード件数 (vertical bar, clickable)
+    const expoNameMap = countBy(ex,'expoName');
+    const expoNameLabels = Object.keys(expoNameMap);
+    window._exExpoDeals = {};
+    expoNameLabels.forEach(name=>{ window._exExpoDeals[name] = ex.filter(d=>d.expoName===name); });
+    chartInstances['expo-name'] = new Chart(document.getElementById('ch-expo-name'), {
+        type:'bar',
+        data:{
+            labels: expoNameLabels,
+            datasets:[{ data: expoNameLabels.map(l=>expoNameMap[l]), backgroundColor:'#F59E0B', borderRadius:4, maxBarThickness:40 }]
+        },
+        options:{
+            ...COMMON_BAR_OPTS('x'),
+            layout:{padding:{top:14}},
+            plugins:{legend:{display:false}},
+            onClick:(evt,els)=>{
+                if(!els.length) return;
+                const name = expoNameLabels[els[0].index];
+                showDealModal('展示会: '+name, window._exExpoDeals[name]);
+            }
+        },
+        plugins:[expoBarLabelPlugin]
+    });
+
+    // Chart 2: フォロー進捗ファネル (horizontal bar, clickable)
+    const followOrder = ['メール作成済み','送付済み','返信あり','アポ取得'];
+    const followMap = {};
+    followOrder.forEach(f=>{ followMap[f] = ex.filter(d=>d.follow===f||d.status===f).length; });
+    window._exFollowDeals = {};
+    followOrder.forEach(f=>{ window._exFollowDeals[f] = ex.filter(d=>d.follow===f||d.status===f); });
+    chartInstances['expo-follow'] = new Chart(document.getElementById('ch-expo-follow'), {
+        type:'bar',
+        data:{
+            labels:followOrder,
+            datasets:[{data:followOrder.map(f=>followMap[f]),backgroundColor:['#94A3B8','#F59E0B','#60A5FA','#10B981'],borderRadius:4,barThickness:20}]
+        },
+        options:{...COMMON_BAR_OPTS('y'),plugins:{legend:{display:false}},onClick:(evt,els)=>{ if(!els.length) return; const lbl=followOrder[els[0].index]; showDealModal('フォロー段階: '+lbl, window._exFollowDeals[lbl]); }}
+    });
+
+    // Chart 3: 業種分布 (vertical bar, value labels, spaced, clickable)
+    const industryMap = countBy(ex,'industry');
+    const industryLabels = Object.keys(industryMap);
+    window._exIndustryDeals = {};
+    industryLabels.forEach(l=>{ window._exIndustryDeals[l] = ex.filter(d=>d.industry===l); });
+    chartInstances['expo-industry'] = new Chart(document.getElementById('ch-expo-industry'), {
+        type:'bar',
+        data:{
+            labels: industryLabels,
+            datasets:[{ data: industryLabels.map(l=>industryMap[l]), backgroundColor:'#8B5CF6', borderRadius:4, maxBarThickness:40 }]
+        },
+        options:{
+            ...COMMON_BAR_OPTS('x'),
+            layout:{padding:{top:14}},
+            plugins:{legend:{display:false}},
+            onClick:(evt,els)=>{ if(!els.length) return; const lbl=industryLabels[els[0].index]; showDealModal('業種: '+lbl, window._exIndustryDeals[lbl]); }
+        },
+        plugins:[expoBarLabelPlugin]
+    });
+}
+
+// ━━ EVENT CHARTS ━━
+function initEventCharts(){
+    ['event-status','event-person','event-prio','event-follow'].forEach(k=>{
+        if(chartInstances[k]){ chartInstances[k].destroy(); delete chartInstances[k]; }
+    });
+    const ev = DATA.filter(d=>d.src==='event');
+
+    // KPIs
+    const doneDeals   = ev.filter(d=>d.status==='完了');
+    const followDeals = ev.filter(d=>d.status==='フォロー中');
+    const newDeals    = ev.filter(d=>d.status==='新規');
+    const done   = doneDeals.length;
+    const follow = followDeals.length;
+    const newL   = newDeals.length;
+    window._evKpiDeals = { all: ev, done: doneDeals, follow: followDeals, newL: newDeals };
+    document.getElementById('ev-k0').innerHTML = ev.length+'<small>件</small>';
+    document.getElementById('ev-k1').innerHTML = done+'<small>件</small>';
+    document.getElementById('ev-k2').innerHTML = follow+'<small>件</small>';
+    document.getElementById('ev-k3').innerHTML = newL+'<small>件</small>';
+
+    // Chart 1: ステータス分布 (pie, clickable)
+    const evStatusLabels = Object.keys(countBy(ev,'status'));
+    chartInstances['event-status'] = new Chart(document.getElementById('ch-event-status'), {
+        type:'pie',
+        data: makePieData(countBy(ev,'status')),
+        options:{ ...COMMON_PIE_OPTS, onClick:(evt,els)=>{ if(!els.length) return; const lbl=evStatusLabels[els[0].index]; showDealModal('ステータス: '+lbl, ev.filter(d=>d.status===lbl)); } }
+    });
+
+    // Chart 2: 担当者別件数（優先度別積み上げ, clickable by person）
+    const evPersons = [...new Set(ev.map(d=>d.person).filter(Boolean))];
+    chartInstances['event-person'] = new Chart(document.getElementById('ch-event-person'), {
+        type:'bar',
+        data:{
+            labels: evPersons,
+            datasets:[
+                {label:'高',backgroundColor:'#EF4444',data:evPersons.map(p=>ev.filter(d=>d.person===p&&d.prio==='高').length),stack:'ep'},
+                {label:'中',backgroundColor:'#F59E0B',data:evPersons.map(p=>ev.filter(d=>d.person===p&&d.prio==='中').length),stack:'ep'},
+                {label:'低',backgroundColor:'#94A3B8',data:evPersons.map(p=>ev.filter(d=>d.person===p&&d.prio==='低').length),stack:'ep'},
+            ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{size:11}}}},onClick:(evt,els)=>{ if(!els.length) return; const p=evPersons[els[0].index]; showDealModal('担当者: '+p, ev.filter(d=>d.person===p)); }}
+    });
+
+    // value label plugin for event charts
+    const evBarLabelPlugin = {
+        id:'evBarLabel',
+        afterDraw(chart){
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach((ds,i)=>{
+                chart.getDatasetMeta(i).data.forEach((bar,idx)=>{
+                    const val = ds.data[idx];
+                    if(val===0) return;
+                    ctx.save();
+                    ctx.fillStyle='#475569';
+                    ctx.font='bold 9px sans-serif';
+                    ctx.textAlign='center';
+                    ctx.textBaseline='bottom';
+                    ctx.fillText(val, bar.x, bar.y-2);
+                    ctx.restore();
+                });
+            });
+        }
+    };
+
+    // Chart 3: 優先度別件数 (vertical bar, clickable)
+    const evPrioMap = {'高':0,'中':0,'低':0};
+    ev.forEach(d=>{ if(evPrioMap[d.prio]!==undefined) evPrioMap[d.prio]++; });
+    const evPrioLabels = Object.keys(evPrioMap);
+    chartInstances['event-prio'] = new Chart(document.getElementById('ch-event-prio'), {
+        type:'bar',
+        data:{labels:evPrioLabels,datasets:[{data:Object.values(evPrioMap),backgroundColor:['#EF4444','#F59E0B','#94A3B8'],borderRadius:4,maxBarThickness:50}]},
+        options:{...COMMON_BAR_OPTS('x'),layout:{padding:{top:14}},plugins:{legend:{display:false}},onClick:(evt,els)=>{ if(!els.length) return; const lbl=evPrioLabels[els[0].index]; showDealModal('優先度: '+lbl, ev.filter(d=>d.prio===lbl)); }},
+        plugins:[evBarLabelPlugin]
+    });
+
+    // Chart 4: フォロー進捗 (vertical bar, clickable)
+    const evStatusMap = countBy(ev,'status');
+    const evFollowLabels = Object.keys(evStatusMap);
+    const evFollowData = evFollowLabels.map(l=>evStatusMap[l]);
+    chartInstances['event-follow'] = new Chart(document.getElementById('ch-event-follow'), {
+        type:'bar',
+        data:{labels:evFollowLabels,datasets:[{data:evFollowData,backgroundColor:'#10B981',borderRadius:4,maxBarThickness:50}]},
+        options:{...COMMON_BAR_OPTS('x'),layout:{padding:{top:14}},plugins:{legend:{display:false}},onClick:(evt,els)=>{ if(!els.length) return; const lbl=evFollowLabels[els[0].index]; showDealModal('ステータス: '+lbl, ev.filter(d=>d.status===lbl)); }},
+        plugins:[evBarLabelPlugin]
+    });
+}
+
+// ━━ CHART HELPER ━━
+const _charts = {};
+function renderOrUpdateChart(id, type, labels, data, colors) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    if (_charts[id]) { _charts[id].destroy(); }
+    _charts[id] = new Chart(ctx, {
+        type,
+        data: {
+            labels,
+            datasets: [{ data, backgroundColor: colors, borderRadius: 4 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: type === 'bar' ? { y: { beginAtZero: true, ticks: { precision: 0 } } } : {}
+        }
+    });
+}
+
+// ━━ REPORT VIEW ━━
+function renderReport(){
+    const rpData = getRpData();
+    const total = rpData.length;
+    const high  = rpData.filter(d=>d.prio==='高').length;
+    const win   = rpData.filter(d=>['アポ取得','完了'].includes(d.status)).length;
+    document.getElementById('rp-total').textContent = total;
+    document.getElementById('rp-high').textContent  = high;
+    document.getElementById('rp-win').textContent   = win;
+
+    const ac = rpData.filter(d=>d.src==='accel');
+    const ex = rpData.filter(d=>d.src==='expo');
+    const ev = rpData.filter(d=>d.src==='event');
+    document.getElementById('rp-accel').textContent    = ac.length;
+    document.getElementById('rp-accel-sub').textContent= `進行中 ${ac.filter(d=>['応募中','審査中','準備中','進行中'].includes(d.status)).length}件`;
+    document.getElementById('rp-expo').textContent     = ex.length;
+    document.getElementById('rp-expo-sub').textContent = `アポ ${ex.filter(d=>d.status==='アポ取得').length}件`;
+    document.getElementById('rp-event').textContent    = ev.length;
+    document.getElementById('rp-event-sub').textContent= `完了 ${ev.filter(d=>d.status==='完了').length}件`;
+
+    persons.forEach((p,i)=>{
+        document.getElementById('rp-p'+i).textContent = rpData.filter(d=>d.person===p).length;
+    });
+
+    // 優先度別
+    document.getElementById('rp-prio-high').textContent = rpData.filter(d=>d.prio==='高').length;
+    document.getElementById('rp-prio-mid').textContent  = rpData.filter(d=>d.prio==='中').length;
+    document.getElementById('rp-prio-low').textContent  = rpData.filter(d=>d.prio==='低').length;
+
+    // アクセラ ステージ別チャート
+    const stages = ['リード','接触済','提出済','商談化','採択！！'];
+    const stageData = stages.map(s => rpData.filter(d=>d.src==='accel'&&d.stage===s).length);
+    renderOrUpdateChart('rp-ch-stage', 'bar', stages, stageData, ['#3B82F6','#60A5FA','#93C5FD','#BFDBFE','#10B981']);
+
+    // 展示会 フォロー状況
+    const follows = ['リード（全件）','送付済み','返信あり','アポ取得'];
+    const followData = [
+        rpData.filter(d=>d.src==='expo').length,
+        rpData.filter(d=>d.src==='expo'&&(d.follow==='送付済み'||d.status==='送付済')).length,
+        rpData.filter(d=>d.src==='expo'&&(d.follow==='返信あり'||d.status==='返信あり')).length,
+        rpData.filter(d=>d.src==='expo'&&(d.follow==='アポ取得'||d.status==='アポ取得')).length,
+    ];
+    renderOrUpdateChart('rp-ch-follow', 'bar', follows, followData, ['#94A3B8','#F59E0B','#60A5FA','#10B981']);
+
+    // ── 月別リード推移（過去12ヶ月）──
+    const today = new Date();
+    const monthLabels = [];
+    const monthAccel = [], monthExpo = [], monthEvent = [];
+    for(let i = 11; i >= 0; i--){
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        monthLabels.push(`${d.getMonth()+1}月`);
+        monthAccel.push(rpData.filter(r=>r.src==='accel'&&r.date&&r.date.startsWith(ym)).length);
+        monthExpo.push(rpData.filter(r=>r.src==='expo'&&r.date&&r.date.startsWith(ym)).length);
+        monthEvent.push(rpData.filter(r=>r.src==='event'&&r.date&&r.date.startsWith(ym)).length);
+    }
+    if(_charts['rp-ch-monthly']) _charts['rp-ch-monthly'].destroy();
+    _charts['rp-ch-monthly'] = new Chart(document.getElementById('rp-ch-monthly').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {label:'アクセラ', data:monthAccel, backgroundColor:'#3B82F6', stack:'s'},
+                {label:'展示会',   data:monthExpo,  backgroundColor:'#F59E0B', stack:'s'},
+                {label:'イベント', data:monthEvent, backgroundColor:'#10B981', stack:'s'},
+            ]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
+            scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{size:11}}}}
+        }
+    });
+
+    // ── 担当者別ワークロード（優先度別積み上げ）──
+    const workPersons = ['田中','鈴木','佐藤','山田'];
+    const wHigh  = workPersons.map(p=>rpData.filter(d=>d.person===p&&d.prio==='高').length);
+    const wMid   = workPersons.map(p=>rpData.filter(d=>d.person===p&&d.prio==='中').length);
+    const wLow   = workPersons.map(p=>rpData.filter(d=>d.person===p&&d.prio==='低').length);
+    if(_charts['rp-ch-workload']) _charts['rp-ch-workload'].destroy();
+    _charts['rp-ch-workload'] = new Chart(document.getElementById('rp-ch-workload').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: workPersons,
+            datasets: [
+                {label:'高',backgroundColor:'#EF4444',data:wHigh,stack:'w'},
+                {label:'中',backgroundColor:'#F59E0B',data:wMid, stack:'w'},
+                {label:'低',backgroundColor:'#94A3B8',data:wLow, stack:'w'},
+            ]
+        },
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
+            scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{size:11}}}}
+        }
+    });
+
+    // ── 〆切アラート（アクセラのみ）──
+    const todayStr = today.toISOString().slice(0,10);
+    const in7 = new Date(today); in7.setDate(in7.getDate()+7);
+    const in7Str = in7.toISOString().slice(0,10);
+    const accelAll = DATA.filter(d=>d.src==='accel'&&d.date);
+    const alertSoon     = accelAll.filter(d=>d.date>=todayStr&&d.date<=in7Str);
+    const alertOverdue  = accelAll.filter(d=>d.date<todayStr);
+    function daysDiff(dateStr){
+        const diff = Math.round((new Date(dateStr)-today)/(1000*60*60*24));
+        return diff;
+    }
+    function alertRow(r){
+        const diff = daysDiff(r.date);
+        const daysLabel = diff===0?'本日':diff>0?`${diff}日後`:`${Math.abs(diff)}日超過`;
+        const daysColor = diff<0?'color:var(--red)':diff<=3?'color:var(--amber)':'color:var(--text)';
+        return `<div class="alert-row" onclick="openP(${r.id})">
+            <div class="alert-row-name">${esc(r.name)}</div>
+            <div class="alert-row-person">${esc(r.person)}</div>
+            <div class="alert-row-days" style="${daysColor}">${daysLabel}（${r.date}）</div>
+        </div>`;
+    }
+    const alertEl = document.getElementById('rp-alert-section');
+    alertEl.innerHTML = `
+        <div class="alert-subsection">
+            <div class="alert-sub-title">
+                <span class="alert-badge warn">7日以内</span> 〆切が近い案件
+            </div>
+            ${alertSoon.length ? alertSoon.sort((a,b)=>a.date.localeCompare(b.date)).map(alertRow).join('') : '<div class="alert-empty">該当なし</div>'}
+        </div>
+        <div class="alert-subsection">
+            <div class="alert-sub-title">
+                <span class="alert-badge danger">期限超過</span> 〆切を過ぎた案件
+            </div>
+            ${alertOverdue.length ? alertOverdue.sort((a,b)=>b.date.localeCompare(a.date)).map(alertRow).join('') : '<div class="alert-empty">該当なし</div>'}
+        </div>`;
+
+    // ── ソース別商談化率 ──
+    const acTotal = rpData.filter(d=>d.src==='accel').length;
+    const exTotal = rpData.filter(d=>d.src==='expo').length;
+    const evTotal = rpData.filter(d=>d.src==='event').length;
+    const acWin = rpData.filter(d=>d.src==='accel'&&d.stage==='採択！！').length;
+    const exWin = rpData.filter(d=>d.src==='expo'&&(d.follow==='アポ取得'||d.status==='アポ取得')).length;
+    const evWin = rpData.filter(d=>d.src==='event'&&d.status==='完了').length;
+    function convPct(w,t){ return t>0?Math.round(w/t*100):0; }
+    function convCard(title,win,total,color){
+        const pct = convPct(win,total);
+        return `<div class="conv-card" style="border-top:3px solid ${color}">
+            <div class="conv-card-title">${title}</div>
+            <div class="conv-rate" style="color:${color}">${pct}%</div>
+            <div class="conv-bar-wrap"><div class="conv-bar" style="width:${pct}%;background:${color}"></div></div>
+            <div class="conv-sub">${win}件 / ${total}件</div>
+        </div>`;
+    }
+    document.getElementById('rp-conv-section').innerHTML =
+        `<div class="conv-grid">
+            ${convCard('アクセラ（採択率）',acWin,acTotal,'#3B82F6')}
+            ${convCard('展示会（アポ取得率）',exWin,exTotal,'#F59E0B')}
+            ${convCard('イベント（完了率）',evWin,evTotal,'#10B981')}
+        </div>`;
+
+    // ── 展示会別フォロー完了率 ──
+    const expoNames = [...new Set(rpData.filter(d=>d.src==='expo'&&d.expoName).map(d=>d.expoName))];
+    const expoFollowLevels = ['メール作成済み','送付済み','返信あり','アポ取得'];
+    const expoFollowColors = ['#94A3B8','#F59E0B','#60A5FA','#10B981'];
+    if(_charts['rp-ch-expo-follow']) _charts['rp-ch-expo-follow'].destroy();
+    _charts['rp-ch-expo-follow'] = new Chart(document.getElementById('rp-ch-expo-follow').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: expoNames.length ? expoNames : ['（データなし）'],
+            datasets: expoFollowLevels.map((fl,i)=>({
+                label: fl,
+                backgroundColor: expoFollowColors[i],
+                data: expoNames.map(en=>rpData.filter(d=>d.src==='expo'&&d.expoName===en&&(d.follow===fl||d.status===fl)).length),
+                stack: 'ef'
+            }))
+        },
+        options:{
+            indexAxis:'y',
+            responsive:true, maintainAspectRatio:false,
+            plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},
+            scales:{x:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{size:11}}},y:{stacked:true,ticks:{font:{size:11}}}}
+        }
+    });
+
+    // ── 長期未更新リード（30日以上） ──
+    const staleThreshold = new Date(today); staleThreshold.setDate(staleThreshold.getDate()-30);
+    const staleStr = staleThreshold.toISOString().slice(0,10);
+    const staleLeads = rpData.filter(d=>{
+        const lastDate = d.updated || d.date;
+        return lastDate && lastDate < staleStr;
+    }).sort((a,b)=>(a.updated||a.date).localeCompare(b.updated||b.date));
+    const staleEl = document.getElementById('rp-stale-section');
+    if(staleLeads.length===0){
+        staleEl.innerHTML = `<div class="alert-subsection"><div class="stale-ok">✓ 全リード 最終更新30日以内です</div></div>`;
+    } else {
+        staleEl.innerHTML = `<div class="alert-subsection">
+            <div class="alert-sub-title"><span class="alert-badge danger">${staleLeads.length}件</span> 30日以上未更新</div>
+            ${staleLeads.map(r=>{
+                const lastDate = r.updated||r.date;
+                const elapsed = Math.round((today - new Date(lastDate))/(1000*60*60*24));
+                return `<div class="stale-row" onclick="openP(${r.id})">
+                    <div class="alert-row-name">${esc(r.name)}</div>
+                    <div><span class="${srcBadge[r.src]}">${srcLabel[r.src]}</span></div>
+                    <div class="alert-row-person">${esc(r.person||'—')}</div>
+                    <div class="alert-row-days" style="color:var(--muted)">${lastDate}</div>
+                    <div class="alert-row-days" style="color:var(--red);min-width:60px">${elapsed}日前</div>
+                </div>`;
+            }).join('')}
+        </div>`;
+    }
+}
+
+// ━━ LIGHTBOX ━━
+function openLightbox(src){
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeLightbox(){
+    document.getElementById('lightbox').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// ━━ CARD IMAGE ━━
+let cardImageData = null;
+
+function handleCardDragOver(e){
+    e.preventDefault();
+    // H7: use currentTarget to avoid child flicker
+    e.currentTarget.classList.add('drag');
+}
+
+function handleCardDragLeave(e){
+    // H7: only remove class when leaving the zone itself, not a child element
+    if(!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.classList.remove('drag');
+}
+
+function handleCardFile(file){
+    if(!file || !file.type.startsWith('image/')) return;
+    // H9: 2MB file size check
+    if(file.size > 2*1024*1024){ showToast('ファイルサイズが2MBを超えています', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => setCardPreview(e.target.result);
+    reader.readAsDataURL(file);
+    document.getElementById('cardUploadZone').classList.remove('drag');
+}
+
+function handleCardDrop(e){
+    e.preventDefault();
+    document.getElementById('cardUploadZone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    handleCardFile(file);
+}
+
+function setCardPreview(dataUrl){
+    cardImageData = dataUrl;
+    document.getElementById('cardPreviewImg').src = dataUrl;
+    document.getElementById('cardPreviewWrap').classList.add('show');
+}
+
+function clearCardImage(e){
+    e.stopPropagation();
+    cardImageData = null;
+    document.getElementById('cardPreviewImg').src = '';
+    document.getElementById('cardPreviewWrap').classList.remove('show');
+    document.getElementById('af-card-file').value = '';
+}
+
+// ━━ ADD MODAL ━━
+let addSrc = 'accel';
+let editId = null;
+let _modalTrigger = null; // C7: track element that opened modal
+
+const ADD_STATUS = {
+    accel: ['準備中','応募中','審査中','完了'],
+    expo:  ['新規','フォロー中','返信待ち','アポ取得'],
+    event: ['新規','フォロー中','完了']
+};
+const ADD_ROLE = {
+    accel: [['AE','AE（Account Executive）'],['SS','SS（Sales Specialist）'],['SM','SM（Sales Manager）']],
+    expo:  [['応対者','応対者'],['引継担当','引継担当']],
+    event: [['担当','担当']]
+};
+
+function openAddModal(){
+    editId = null;
+    _modalTrigger = document.activeElement;
+    document.querySelector('.modal-title').textContent = '新規リード追加';
+    document.getElementById('addModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('deleteBtn').style.display='none';
+    document.getElementById('submitBtn').textContent='追加する';
+    resetAddForm();
+    // C7: focus first input
+    setTimeout(()=>{ const f=document.getElementById('af-name'); if(f) f.focus(); }, 50);
+}
+
+function openEditModal(idxOverride){
+    // C3: safely handle missing/undefined record
+    const targetId = (idxOverride !== undefined) ? idxOverride : selId;
+    const r = DATA.find(d=>d.id===targetId);
+    if(!r) return;
+    selId = r.id; // ensure selId is set
+    editId = r.id;
+    _modalTrigger = document.activeElement;
+    document.querySelector('.modal-title').textContent = 'リード編集';
+    document.getElementById('addModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('deleteBtn').style.display='';
+    document.getElementById('submitBtn').textContent='保存する';
+    resetAddForm();
+
+    // ソース切り替えと事前入力
+    const srcBtn = document.querySelector(`.src-tab[data-src="${r.src}"]`);
+    switchAddSrc(r.src, srcBtn);
+
+    // 共通フィールド
+    document.getElementById('af-name').value    = r.name || '';
+    document.getElementById('af-company').value = r.src !== 'accel' ? (r.company || '') : '';
+    document.getElementById('af-prio').value    = r.prio || '中';
+    document.getElementById('af-date').value    = r.date || '';
+    document.getElementById('af-person').value  = r.person || '田中';
+    document.getElementById('af-memo').value    = r.memo || '';
+    // role と status はoptions生成後に値セット
+    const roleEl = document.getElementById('af-role');
+    if([...roleEl.options].some(o=>o.value===r.role)) roleEl.value = r.role;
+    const statusEl = document.getElementById('af-status');
+    if([...statusEl.options].some(o=>o.value===r.status)) statusEl.value = r.status;
+
+    // ソース別フィールド
+    if(r.src==='accel'){
+        document.getElementById('af-stage').value      = r.stage || 'リード';
+        document.getElementById('af-phase').value      = r.phase || '情報収集';
+        document.getElementById('af-quarter').value    = r.quarter || 'Q3';
+        document.getElementById('af-amount').value     = (r.amount&&r.amount!=='—') ? r.amount : '';
+        document.getElementById('af-value').value      = (r.value&&r.value!=='—') ? r.value : '';
+        document.getElementById('af-efficiency').value = r.efficiency || '中';
+    } else if(r.src==='expo'){
+        document.getElementById('af-name2-expo').value    = r.name2 || '';
+        document.getElementById('af-role2-expo').value    = r.role2 || '';
+        document.getElementById('af-dept-expo').value     = r.dept || '';
+        document.getElementById('af-contact-expo').value  = (r.contact&&r.contact!=='—') ? r.contact : '';
+        document.getElementById('af-expo-name').value     = r.expoName || '';
+        document.getElementById('af-industry').value      = r.industry || '';
+        document.getElementById('af-decision').value      = r.decision || '不明';
+        document.getElementById('af-follow').value        = r.follow || '';
+        document.getElementById('af-budget').value        = r.budget || '未確認';
+        document.getElementById('af-timing').value        = r.timing || '未定';
+        document.getElementById('af-needs').value         = r.needs || '';
+    } else {
+        document.getElementById('af-name2-event').value   = r.name2 || '';
+        document.getElementById('af-role2-event').value   = r.role2 || '';
+        document.getElementById('af-dept-event').value    = r.dept || '';
+        document.getElementById('af-contact-event').value = (r.contact&&r.contact!=='—') ? r.contact : '';
+        if(r.cardImage) setCardPreview(r.cardImage);
+    }
+    // C7: focus first input after edit modal populates
+    setTimeout(()=>{ const f=document.getElementById('af-name'); if(f) f.focus(); }, 50);
+}
+
+function closeAddModal(){
+    editId = null;
+    document.getElementById('addModal').classList.remove('show');
+    document.body.style.overflow = '';
+    // C7: return focus to trigger element
+    if(_modalTrigger && typeof _modalTrigger.focus === 'function'){ try{ _modalTrigger.focus(); }catch(e){} }
+    _modalTrigger = null;
+}
+
+function deleteCurrentLead(){
+    if(!confirm('このリードを削除しますか？')) return;
+    const idx = DATA.findIndex(d=>d.id===editId);
+    if(idx > -1){ DATA.splice(idx,1); saveToStorage(); showToast('リードを削除しました'); }
+    closeAddModal();
+    closeP();
+    render();
+}
+
+function bgCloseModal(e){
+    if(e.target === document.getElementById('addModal')) closeAddModal();
+}
+
+function resetAddForm(){
+    addSrc = 'accel';
+    // reset source tabs
+    document.querySelectorAll('.src-tab').forEach(t=>{ t.className='src-tab'; });
+    document.querySelector('.src-tab[data-src="accel"]').className='src-tab on';
+    // reset sections
+    document.getElementById('af-sec-accel').style.display = '';
+    document.getElementById('af-sec-expo').style.display  = 'none';
+    document.getElementById('af-sec-event').style.display = 'none';
+    document.getElementById('af-company-wrap').style.display = 'none';
+    // reset labels/selects
+    document.getElementById('af-name-label').innerHTML = '案件名<span>*</span>';
+    document.getElementById('af-name').placeholder = '例: IPA 未踏アドバンスト2026';
+    updateStatusOptions('accel');
+    updateRoleOptions('accel');
+    // clear inputs
+    ['af-name','af-company','af-memo','af-date','af-amount','af-value',
+     'af-name2-expo','af-role2-expo','af-dept-expo','af-contact-expo','af-needs',
+     'af-name2-event','af-role2-event','af-dept-event','af-contact-event'
+    ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    cardImageData = null;
+    document.getElementById('cardPreviewImg').src = '';
+    document.getElementById('cardPreviewWrap').classList.remove('show');
+    document.getElementById('af-card-file').value = '';
+    document.querySelectorAll('.form-input.err').forEach(el=>el.classList.remove('err'));
+    // reset selects to default
+    document.getElementById('af-prio').value = '中';
+    document.getElementById('af-person').value = '田中';
+    document.getElementById('af-quarter') && (document.getElementById('af-quarter').value='Q3');
+    document.getElementById('af-efficiency') && (document.getElementById('af-efficiency').value='中');
+    document.getElementById('af-decision') && (document.getElementById('af-decision').value='不明');
+    document.getElementById('af-budget') && (document.getElementById('af-budget').value='未確認');
+    document.getElementById('af-timing') && (document.getElementById('af-timing').value='未定');
+    // M3: also reset additional selects
+    const followEl = document.getElementById('af-follow');
+    if(followEl && followEl.options.length>0) followEl.selectedIndex=0;
+    const expoNameEl = document.getElementById('af-expo-name');
+    if(expoNameEl && expoNameEl.options.length>0) expoNameEl.selectedIndex=0;
+    const industryEl = document.getElementById('af-industry');
+    if(industryEl && industryEl.options.length>0) industryEl.selectedIndex=0;
+}
+
+function switchAddSrc(src, btn){
+    addSrc = src;
+    // update tab styles
+    document.querySelectorAll('.src-tab').forEach(t=>{ t.className='src-tab'; });
+    btn.className = src==='accel' ? 'src-tab on' : src==='expo' ? 'src-tab on-expo' : 'src-tab on-event';
+    // show/hide sections
+    document.getElementById('af-sec-accel').style.display = src==='accel' ? '' : 'none';
+    document.getElementById('af-sec-expo').style.display  = src==='expo'  ? '' : 'none';
+    document.getElementById('af-sec-event').style.display = src==='event' ? '' : 'none';
+    // company field: アクセラは案件名が企業名を兼ねるので非表示、他は表示
+    document.getElementById('af-company-wrap').style.display = src==='accel' ? 'none' : '';
+    // update name label/placeholder
+    const nameLabel = {accel:'案件名', expo:'企業名', event:'企業名'};
+    const namePH    = {accel:'例: IPA 未踏アドバンスト2026', expo:'例: 株式会社テックソリューション', event:'例: 有限会社サクラテック'};
+    document.getElementById('af-name-label').innerHTML = nameLabel[src]+'<span>*</span>';
+    document.getElementById('af-name').placeholder = namePH[src];
+    updateStatusOptions(src);
+    updateRoleOptions(src);
+    document.querySelectorAll('.form-input.err').forEach(el=>el.classList.remove('err'));
+}
+
+function updateStatusOptions(src){
+    const sel = document.getElementById('af-status');
+    sel.innerHTML = ADD_STATUS[src].map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+
+function updateRoleOptions(src){
+    const sel = document.getElementById('af-role');
+    const label = document.getElementById('af-role-label');
+    sel.innerHTML = ADD_ROLE[src].map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+    label.textContent = src==='accel' ? '役割' : '担当区分';
+}
+
+function submitAddForm(){
+    // validate required
+    const nameEl   = document.getElementById('af-name');
+    const personEl = document.getElementById('af-person');
+    const statusEl = document.getElementById('af-status');
+    let valid = true;
+    [nameEl].forEach(el=>{ el.classList.remove('err'); if(!el.value.trim()){ el.classList.add('err'); valid=false; } });
+    if(!valid){ nameEl.focus(); return; }
+
+    const name = nameEl.value.trim();
+    const company = addSrc==='accel' ? name : document.getElementById('af-company').value.trim() || name;
+
+    const base = {
+        id: DATA.reduce((m,d)=>Math.max(m,d.id),0)+1,
+        name, company,
+        src:    addSrc,
+        person: personEl.value,
+        role:   document.getElementById('af-role').value,
+        status: statusEl.value,
+        prio:   document.getElementById('af-prio').value,
+        date:   document.getElementById('af-date').value || null,
+        memo:   document.getElementById('af-memo').value.trim() || null,
+    };
+
+    if(addSrc==='accel'){
+        Object.assign(base, {
+            stage:      document.getElementById('af-stage').value,
+            phase:      document.getElementById('af-phase').value,
+            quarter:    document.getElementById('af-quarter').value,
+            amount:     document.getElementById('af-amount').value.trim() || '—',
+            value:      document.getElementById('af-value').value.trim() || '—',
+            efficiency: document.getElementById('af-efficiency').value,
+            contact:    '—',
+        });
+    } else if(addSrc==='expo'){
+        Object.assign(base, {
+            name2:    document.getElementById('af-name2-expo').value.trim() || null,
+            role2:    document.getElementById('af-role2-expo').value.trim() || null,
+            dept:     document.getElementById('af-dept-expo').value.trim() || null,
+            contact:  document.getElementById('af-contact-expo').value.trim() || '—',
+            expoName: document.getElementById('af-expo-name').value,
+            industry: document.getElementById('af-industry').value,
+            decision: document.getElementById('af-decision').value,
+            follow:   document.getElementById('af-follow').value,
+            budget:   document.getElementById('af-budget').value,
+            timing:   document.getElementById('af-timing').value,
+            needs:    document.getElementById('af-needs').value.trim() || null,
+        });
+    } else {
+        Object.assign(base, {
+            name2:     document.getElementById('af-name2-event').value.trim() || null,
+            role2:     document.getElementById('af-role2-event').value.trim() || null,
+            dept:      document.getElementById('af-dept-event').value.trim() || null,
+            contact:   document.getElementById('af-contact-event').value.trim() || '—',
+            cardImage: cardImageData || null,
+        });
+    }
+
+    if(editId !== null){
+        // C6: completely replace record to avoid stale fields; preserve id and src
+        const idx = DATA.findIndex(d=>d.id===editId);
+        if(idx > -1){
+            const updated = { ...base, id: DATA[idx].id, src: DATA[idx].src };
+            DATA[idx] = updated;
+        }
+        saveToStorage();
+        showToast('リードを更新しました'); // H1
+        const updatedId = editId;
+        closeAddModal();
+        render();
+        openP(updatedId);
+    } else {
+        DATA.unshift(base);
+        saveToStorage();
+        showToast('リードを追加しました'); // H1
+        closeAddModal();
+        const listItem = document.querySelector('.s-item[onclick*="list"]');
+        switchView('list', listItem);
+        selId = base.id;
+        render();
+        openP(base.id);
+    }
+}
+
+// ━━ INIT ━━
+// 最終同期日時を現在時刻で初期化
+(function initLastSync(){
+    const el = document.getElementById('lastSync');
+    if(el) el.textContent = new Date().toLocaleString('ja-JP');
+})();
+updateStatusFilterOptions(); // ステータスフィルターを初期生成
+updateDetailFilters(); // 詳細フィルターの表示を初期化
+render();
+</script>
+
+<!-- DEAL MODAL -->
+<div id="deal-modal" class="deal-modal-overlay" onclick="closeDealModal(event)">
+    <div class="deal-modal">
+        <div class="deal-modal-head">
+            <span class="deal-modal-title" id="deal-modal-title"></span>
+            <button class="deal-modal-close" onclick="_modalReturn=null;document.getElementById('deal-modal').style.display='none'">×</button>
+        </div>
+        <div class="deal-modal-list" id="deal-modal-list"></div>
+    </div>
+</div>
+</body>
+</html>
