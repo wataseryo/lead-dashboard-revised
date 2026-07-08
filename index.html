@@ -1099,15 +1099,15 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
         <div class="form-sec">連絡先情報</div>
         <div class="form-grid">
             <div class="form-group">
-                <label class="form-label">先方の名前<span>*</span></label>
+                <label class="form-label">先方の名前</label>
                 <input class="form-input" id="af-name2" type="text" placeholder="例: 山崎 健一">
             </div>
             <div class="form-group">
-                <label class="form-label">メールアドレス<span>*</span></label>
+                <label class="form-label">メールアドレス</label>
                 <input class="form-input" id="af-contact" type="email" placeholder="例: name@company.com">
             </div>
             <div class="form-group">
-                <label class="form-label">電話番号<span>*</span></label>
+                <label class="form-label">電話番号</label>
                 <input class="form-input" id="af-tel" type="tel" placeholder="例: 03-1234-5678">
             </div>
         </div>
@@ -3298,14 +3298,11 @@ function updateRoleOptions(src){
 
 function submitAddForm(){
     // validate required
-    const nameEl    = document.getElementById('af-name');
-    const name2El   = document.getElementById('af-name2');
-    const contactEl = document.getElementById('af-contact');
-    const telEl     = document.getElementById('af-tel');
-    const personEl  = document.getElementById('af-person');
-    const statusEl  = document.getElementById('af-status');
+    const nameEl   = document.getElementById('af-name');
+    const personEl = document.getElementById('af-person');
+    const statusEl = document.getElementById('af-status');
     let valid = true;
-    [nameEl, name2El, contactEl, telEl].forEach(el=>{ el.classList.remove('err'); if(!el.value.trim()){ el.classList.add('err'); valid=false; } });
+    [nameEl].forEach(el=>{ el.classList.remove('err'); if(!el.value.trim()){ el.classList.add('err'); valid=false; } });
     if(!valid){ nameEl.focus(); return; }
 
     const name = nameEl.value.trim();
