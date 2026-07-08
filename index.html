@@ -654,7 +654,7 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
             <th onclick="setSort('prio')">優先度 <span id="sh-prio"></span></th>
             <th>ステータス</th>
             <th onclick="setSort('person')">担当者 <span id="sh-person"></span></th>
-            <th onclick="setSort('date')">〆切 <span id="sh-date"></span></th>
+            <th onclick="setSort('nextDeadline')">〆切 <span id="sh-nextDeadline"></span></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
     </table>
@@ -1045,8 +1045,16 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">日付 / 〆切</label>
-                <input class="form-input" id="af-date" type="date">
+                <label class="form-label">接触開始日</label>
+                <input class="form-input" id="af-contactDate" type="date">
+            </div>
+            <div class="form-group">
+                <label class="form-label">ネクストアクション〆切</label>
+                <input class="form-input" id="af-nextDeadline" type="date">
+            </div>
+            <div class="form-group span2">
+                <label class="form-label">ネクストアクション</label>
+                <input class="form-input" id="af-nextAction" type="text" placeholder="例: 提案資料を送付する">
             </div>
             <div class="form-group">
                 <label class="form-label">社内担当<span>*</span></label>
@@ -1338,57 +1346,57 @@ function getQuarter(dateStr) {
 // ダミーデータ（初回のみ使用）
 const DATA = [
     // アクセラ
-    {id:1,name:'IPA 未踏アドバンスト2026',company:'IPA（情報処理推進機構）',src:'accel',person:'田中',role:'AE',status:'応募中',stage:'提出済',prio:'高',date:'2026-07-15',memo:'提案資料の最終確認が必要。早期〆切に注意。',phase:'書類選考',quarter:'Q3',amount:'最大500万円',value:'技術認定＋資金',efficiency:'高',contact:'—'},
-    {id:2,name:'NEDO スタートアップ支援',company:'NEDO',src:'accel',person:'鈴木',role:'SM',status:'審査中',stage:'商談化',prio:'高',date:'2026-07-20',memo:'ヒアリング日程調整中。',phase:'一次審査',quarter:'Q3',amount:'最大1,000万円',value:'資金＋広報',efficiency:'高',contact:'—'},
-    {id:3,name:'J-Startup 認定プログラム',company:'経済産業省',src:'accel',person:'田中',role:'AE',status:'準備中',stage:'接触済',prio:'中',date:'2026-08-01',memo:'応募要件の確認が必要。',phase:'情報収集',quarter:'Q3',amount:'—',value:'認知度向上',efficiency:'中',contact:'—'},
-    {id:4,name:'AWS Startup Program',company:'Amazon Web Services',src:'accel',person:'佐藤',role:'SS',status:'完了',stage:'商談化',prio:'低',date:'2026-06-10',memo:'採択済み。クレジット付与待ち。',phase:'採択後',quarter:'Q2',amount:'クレジット$25K',value:'インフラ費削減',efficiency:'高',contact:'—'},
-    {id:5,name:'Google for Startups',company:'Google',src:'accel',person:'山田',role:'AE',status:'準備中',stage:'リード',prio:'中',date:'2026-08-20',memo:'担当者へのコンタクト済み。',phase:'情報収集',quarter:'Q3',amount:'クレジット$200K',value:'技術支援',efficiency:'高',contact:'—'},
-    {id:6,name:'Salesforce Startup Program',company:'Salesforce',src:'accel',person:'鈴木',role:'SS',status:'応募中',stage:'接触済',prio:'高',date:'2026-07-05',memo:'SaaS系の強化に期待。早急に応募書類を完成させる。',phase:'書類選考',quarter:'Q3',amount:'CRMライセンス無償',value:'ツール活用',efficiency:'中',contact:'—'},
+    {id:1,name:'IPA 未踏アドバンスト2026',company:'IPA 未踏アドバンスト2026',src:'accel',person:'田中',role:'AE',status:'応募中',stage:'提出済',prio:'高',contactDate:'',nextDeadline:'2026-07-15',nextAction:'',memo:'提案資料の最終確認が必要。早期〆切に注意。',phase:'書類選考',quarter:'Q3',amount:'最大500万円',value:'技術認定＋資金',efficiency:'高',contact:'—'},
+    {id:2,name:'NEDO スタートアップ支援',company:'NEDO スタートアップ支援',src:'accel',person:'鈴木',role:'SM',status:'審査中',stage:'商談化',prio:'高',contactDate:'',nextDeadline:'2026-07-20',nextAction:'',memo:'ヒアリング日程調整中。',phase:'一次審査',quarter:'Q3',amount:'最大1,000万円',value:'資金＋広報',efficiency:'高',contact:'—'},
+    {id:3,name:'J-Startup 認定プログラム',company:'J-Startup 認定プログラム',src:'accel',person:'田中',role:'AE',status:'準備中',stage:'接触済',prio:'中',contactDate:'',nextDeadline:'2026-08-01',nextAction:'',memo:'応募要件の確認が必要。',phase:'情報収集',quarter:'Q3',amount:'—',value:'認知度向上',efficiency:'中',contact:'—'},
+    {id:4,name:'AWS Startup Program',company:'AWS Startup Program',src:'accel',person:'佐藤',role:'SS',status:'完了',stage:'商談化',prio:'低',contactDate:'',nextDeadline:'2026-06-10',nextAction:'',memo:'採択済み。クレジット付与待ち。',phase:'採択後',quarter:'Q2',amount:'クレジット$25K',value:'インフラ費削減',efficiency:'高',contact:'—'},
+    {id:5,name:'Google for Startups',company:'Google for Startups',src:'accel',person:'山田',role:'AE',status:'準備中',stage:'リード',prio:'中',contactDate:'',nextDeadline:'2026-08-20',nextAction:'',memo:'担当者へのコンタクト済み。',phase:'情報収集',quarter:'Q3',amount:'クレジット$200K',value:'技術支援',efficiency:'高',contact:'—'},
+    {id:6,name:'Salesforce Startup Program',company:'Salesforce Startup Program',src:'accel',person:'鈴木',role:'SS',status:'応募中',stage:'接触済',prio:'高',contactDate:'',nextDeadline:'2026-07-05',nextAction:'',memo:'SaaS系の強化に期待。早急に応募書類を完成させる。',phase:'書類選考',quarter:'Q3',amount:'CRMライセンス無償',value:'ツール活用',efficiency:'中',contact:'—'},
 
     // 展示会
-    {id:7,name:'株式会社テックソリューション',company:'株式会社テックソリューション',src:'expo',person:'鈴木',role:'応対者',status:'フォロー中',prio:'高',date:'2026-06-20',memo:'DX推進に強い関心。来月デモ希望。',expoName:'Japan IT Week',industry:'IT・SaaS',needs:'業務効率化',budget:'500万〜',timing:'2026年Q3',decision:'あり',follow:'送付済み',scale:'大規模',contact:'—',name2:'山崎 健一',dept:'情報システム部',role2:'部長'},
-    {id:8,name:'合同会社フューチャーラボ',company:'合同会社フューチャーラボ',src:'expo',person:'田中',role:'引継担当',status:'アポ取得',prio:'高',date:'2026-06-20',memo:'CTO自らブースに来訪。興味高い。',expoName:'Japan IT Week',industry:'IT・SaaS',needs:'AI導入',budget:'〜100万',timing:'即時',decision:'あり',follow:'アポ取得',scale:'スタートアップ',contact:'yamamoto@futurelab.example',name2:'山本 直樹',dept:'技術部',role2:'CTO'},
-    {id:9,name:'株式会社グローバルトレード',company:'株式会社グローバルトレード',src:'expo',person:'佐藤',role:'応対者',status:'返信待ち',prio:'中',date:'2026-06-21',memo:'海外展開に興味。英語対応が必要かも。',expoName:'Japan IT Week',industry:'商社・貿易',needs:'グローバル展開支援',budget:'未確認',timing:'未定',decision:'不明',follow:'送付済み',scale:'大規模',contact:'—',name2:'田辺 洋子',dept:'海外事業部',role2:'課長'},
-    {id:10,name:'有限会社スマートファクトリー',company:'有限会社スマートファクトリー',src:'expo',person:'山田',role:'応対者',status:'新規',prio:'低',date:'2026-06-21',memo:'製造業DX。名刺交換のみ。',expoName:'製造業展示会',industry:'製造業',needs:'IoT・設備管理',budget:'100〜500万',timing:'未定',decision:'なし',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'中村 誠',dept:'生産管理部',role2:'担当'},
-    {id:11,name:'株式会社デジタルメディア',company:'株式会社デジタルメディア',src:'expo',person:'鈴木',role:'引継担当',status:'フォロー中',prio:'高',date:'2026-05-15',memo:'メール送付済み。返信まち。',expoName:'マーケティングEXPO',industry:'メディア',needs:'マーケオートメーション',budget:'100〜500万',timing:'2026年Q4',decision:'なし',follow:'返信あり',scale:'中規模',contact:'—',name2:'橋本 彩',dept:'マーケティング部',role2:'マネージャー'},
-    {id:12,name:'合同会社クリエイティブワークス',company:'合同会社クリエイティブワークス',src:'expo',person:'田中',role:'応対者',status:'アポ取得',prio:'中',date:'2026-05-16',memo:'デザイン業務の効率化に関心。',expoName:'マーケティングEXPO',industry:'クリエイティブ',needs:'コンテンツ制作支援',budget:'〜100万',timing:'2026年Q4',decision:'あり',follow:'アポ取得',scale:'スタートアップ',contact:'info@creativeworks.example',name2:'松本 翔太',dept:'制作部',role2:'ディレクター'},
+    {id:7,name:'株式会社テックソリューション',company:'株式会社テックソリューション',src:'expo',person:'鈴木',role:'応対者',status:'フォロー中',prio:'高',contactDate:'2026-06-20',nextDeadline:'',nextAction:'',memo:'DX推進に強い関心。来月デモ希望。',expoName:'Japan IT Week',industry:'IT・SaaS',needs:'業務効率化',budget:'500万〜',timing:'2026年Q3',decision:'あり',follow:'送付済み',scale:'大規模',contact:'—',name2:'山崎 健一',dept:'情報システム部',role2:'部長'},
+    {id:8,name:'合同会社フューチャーラボ',company:'合同会社フューチャーラボ',src:'expo',person:'田中',role:'引継担当',status:'アポ取得',prio:'高',contactDate:'2026-06-20',nextDeadline:'',nextAction:'',memo:'CTO自らブースに来訪。興味高い。',expoName:'Japan IT Week',industry:'IT・SaaS',needs:'AI導入',budget:'〜100万',timing:'即時',decision:'あり',follow:'アポ取得',scale:'スタートアップ',contact:'yamamoto@futurelab.example',name2:'山本 直樹',dept:'技術部',role2:'CTO'},
+    {id:9,name:'株式会社グローバルトレード',company:'株式会社グローバルトレード',src:'expo',person:'佐藤',role:'応対者',status:'返信待ち',prio:'中',contactDate:'2026-06-21',nextDeadline:'',nextAction:'',memo:'海外展開に興味。英語対応が必要かも。',expoName:'Japan IT Week',industry:'商社・貿易',needs:'グローバル展開支援',budget:'未確認',timing:'未定',decision:'不明',follow:'送付済み',scale:'大規模',contact:'—',name2:'田辺 洋子',dept:'海外事業部',role2:'課長'},
+    {id:10,name:'有限会社スマートファクトリー',company:'有限会社スマートファクトリー',src:'expo',person:'山田',role:'応対者',status:'新規',prio:'低',contactDate:'2026-06-21',nextDeadline:'',nextAction:'',memo:'製造業DX。名刺交換のみ。',expoName:'製造業展示会',industry:'製造業',needs:'IoT・設備管理',budget:'100〜500万',timing:'未定',decision:'なし',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'中村 誠',dept:'生産管理部',role2:'担当'},
+    {id:11,name:'株式会社デジタルメディア',company:'株式会社デジタルメディア',src:'expo',person:'鈴木',role:'引継担当',status:'フォロー中',prio:'高',contactDate:'2026-05-15',nextDeadline:'',nextAction:'',memo:'メール送付済み。返信まち。',expoName:'マーケティングEXPO',industry:'メディア',needs:'マーケオートメーション',budget:'100〜500万',timing:'2026年Q4',decision:'なし',follow:'返信あり',scale:'中規模',contact:'—',name2:'橋本 彩',dept:'マーケティング部',role2:'マネージャー'},
+    {id:12,name:'合同会社クリエイティブワークス',company:'合同会社クリエイティブワークス',src:'expo',person:'田中',role:'応対者',status:'アポ取得',prio:'中',contactDate:'2026-05-16',nextDeadline:'',nextAction:'',memo:'デザイン業務の効率化に関心。',expoName:'マーケティングEXPO',industry:'クリエイティブ',needs:'コンテンツ制作支援',budget:'〜100万',timing:'2026年Q4',decision:'あり',follow:'アポ取得',scale:'スタートアップ',contact:'info@creativeworks.example',name2:'松本 翔太',dept:'制作部',role2:'ディレクター'},
 
     // アクセラ追加
-    {id:16,name:'SoftBank スタートアップ採用プログラム',company:'SoftBank',src:'accel',person:'田中',role:'AE',status:'応募中',stage:'提出済',prio:'高',date:'2026-07-10',memo:'ソフバン担当者と事前コンタクト済み。資料修正中。',phase:'スライド・レビュー',quarter:'Q3',amount:'〜500万円',value:'販路拡大',efficiency:'高',contact:'メッセージ'},
-    {id:17,name:'STATION Ai アクセラ2026',company:'STATION Ai',src:'accel',person:'鈴木',role:'AE',status:'準備中',stage:'リード',prio:'中',date:'2026-09-01',memo:'愛知拠点強化に向けて検討中。',phase:'案件評価',quarter:'Q3',amount:'〜300万円',value:'拠点確保',efficiency:'中',contact:'未実施'},
-    {id:18,name:'東京都スタートアップ支援事業',company:'東京都',src:'accel',person:'山田',role:'SS',status:'審査中',stage:'商談化',prio:'高',date:'2026-07-25',memo:'一次審査通過。最終プレゼン準備中。',phase:'修正・提出',quarter:'Q3',amount:'最大2,000万円',value:'資金＋認知',efficiency:'高',contact:'面談'},
-    {id:19,name:'Creww オープンイノベーションプログラム',company:'Creww',src:'accel',person:'佐藤',role:'AE',status:'失注',stage:'接触済',prio:'低',date:'2026-05-31',memo:'条件が合わず辞退。次期公募に再チャレンジ予定。',phase:'案件評価',quarter:'Q2',amount:'〜100万円',value:'ブランド認知',efficiency:'低',contact:'メッセージ'},
-    {id:20,name:'ひろしまAIサンドボックス2026',company:'広島県',src:'accel',person:'田中',role:'SM',status:'準備中',stage:'リード',prio:'中',date:'2026-08-15',memo:'広島拠点の実証実験枠。地域密着型で進める。',phase:'方針設計',quarter:'Q3',amount:'〜300万円',value:'実証実績',efficiency:'中',contact:'未実施'},
-    {id:21,name:'J-good-tech マッチングプログラム',company:'J-good-tech',src:'accel',person:'鈴木',role:'AE',status:'応募中',stage:'提出済',prio:'高',date:'2026-07-08',memo:'中小企業との協業案件。製造業クライアントとの接点確保が目的。',phase:'情報設計・作成',quarter:'Q3',amount:'条件アリ',value:'製造業開拓',efficiency:'中',contact:'メッセージ'},
-    {id:22,name:'NEDO IoT推進ラボ',company:'NEDO',src:'accel',person:'山田',role:'AE',status:'辞退',stage:'リード',prio:'低',date:'2026-04-20',memo:'スコープが合わず応募見送り。',phase:'案件評価',quarter:'Q2',amount:'〜1,000万円',value:'技術実証',efficiency:'低',contact:'未実施'},
-    {id:23,name:'Agorize グローバルチャレンジ',company:'Agorize',src:'accel',person:'佐藤',role:'SS',status:'準備中',stage:'接触済',prio:'中',date:'2026-09-30',memo:'英語での応募が必要。グローバル展開の足がかりとして検討。',phase:'情報収集',quarter:'Q3',amount:'不明',value:'グローバル展開',efficiency:'中',contact:'メッセージ'},
-    {id:40,name:'経産省 スタートアップ育成5か年計画',company:'経済産業省',src:'accel',person:'田中',role:'AE',status:'進行中',stage:'商談化',prio:'高',date:'2026-07-18',memo:'担当官とのミーティング設定済み。最終資料の調整中。',phase:'プレゼン準備',quarter:'Q3',amount:'最大3,000万円',value:'政府認定＋資金',efficiency:'高',contact:'面談'},
-    {id:41,name:'三菱地所アクセラレーター2026',company:'三菱地所',src:'accel',person:'山田',role:'SM',status:'進行中',stage:'提出済',prio:'高',date:'2026-07-22',memo:'不動産DX枠で選考通過。次フェーズのプレゼン待ち。',phase:'書類選考',quarter:'Q3',amount:'支援金500万＋オフィス',value:'拠点＋販路',efficiency:'高',contact:'メッセージ'},
-    {id:42,name:'リクルート スタートアップ共創プログラム',company:'リクルート',src:'accel',person:'鈴木',role:'AE',status:'進行中',stage:'接触済',prio:'中',date:'2026-08-05',memo:'HR領域のパートナー連携として検討中。担当部署と調整中。',phase:'情報設計・作成',quarter:'Q3',amount:'条件アリ',value:'HR業界開拓',efficiency:'中',contact:'メッセージ'},
+    {id:16,name:'SoftBank スタートアップ採用プログラム',company:'SoftBank スタートアップ採用プログラム',src:'accel',person:'田中',role:'AE',status:'応募中',stage:'提出済',prio:'高',contactDate:'',nextDeadline:'2026-07-10',nextAction:'',memo:'ソフバン担当者と事前コンタクト済み。資料修正中。',phase:'スライド・レビュー',quarter:'Q3',amount:'〜500万円',value:'販路拡大',efficiency:'高',contact:'メッセージ'},
+    {id:17,name:'STATION Ai アクセラ2026',company:'STATION Ai アクセラ2026',src:'accel',person:'鈴木',role:'AE',status:'準備中',stage:'リード',prio:'中',contactDate:'',nextDeadline:'2026-09-01',nextAction:'',memo:'愛知拠点強化に向けて検討中。',phase:'案件評価',quarter:'Q3',amount:'〜300万円',value:'拠点確保',efficiency:'中',contact:'未実施'},
+    {id:18,name:'東京都スタートアップ支援事業',company:'東京都スタートアップ支援事業',src:'accel',person:'山田',role:'SS',status:'審査中',stage:'商談化',prio:'高',contactDate:'',nextDeadline:'2026-07-25',nextAction:'',memo:'一次審査通過。最終プレゼン準備中。',phase:'修正・提出',quarter:'Q3',amount:'最大2,000万円',value:'資金＋認知',efficiency:'高',contact:'面談'},
+    {id:19,name:'Creww オープンイノベーションプログラム',company:'Creww オープンイノベーションプログラム',src:'accel',person:'佐藤',role:'AE',status:'失注',stage:'接触済',prio:'低',contactDate:'',nextDeadline:'2026-05-31',nextAction:'',memo:'条件が合わず辞退。次期公募に再チャレンジ予定。',phase:'案件評価',quarter:'Q2',amount:'〜100万円',value:'ブランド認知',efficiency:'低',contact:'メッセージ'},
+    {id:20,name:'ひろしまAIサンドボックス2026',company:'ひろしまAIサンドボックス2026',src:'accel',person:'田中',role:'SM',status:'準備中',stage:'リード',prio:'中',contactDate:'',nextDeadline:'2026-08-15',nextAction:'',memo:'広島拠点の実証実験枠。地域密着型で進める。',phase:'方針設計',quarter:'Q3',amount:'〜300万円',value:'実証実績',efficiency:'中',contact:'未実施'},
+    {id:21,name:'J-good-tech マッチングプログラム',company:'J-good-tech マッチングプログラム',src:'accel',person:'鈴木',role:'AE',status:'応募中',stage:'提出済',prio:'高',contactDate:'',nextDeadline:'2026-07-08',nextAction:'',memo:'中小企業との協業案件。製造業クライアントとの接点確保が目的。',phase:'情報設計・作成',quarter:'Q3',amount:'条件アリ',value:'製造業開拓',efficiency:'中',contact:'メッセージ'},
+    {id:22,name:'NEDO IoT推進ラボ',company:'NEDO IoT推進ラボ',src:'accel',person:'山田',role:'AE',status:'辞退',stage:'リード',prio:'低',contactDate:'',nextDeadline:'2026-04-20',nextAction:'',memo:'スコープが合わず応募見送り。',phase:'案件評価',quarter:'Q2',amount:'〜1,000万円',value:'技術実証',efficiency:'低',contact:'未実施'},
+    {id:23,name:'Agorize グローバルチャレンジ',company:'Agorize グローバルチャレンジ',src:'accel',person:'佐藤',role:'SS',status:'準備中',stage:'接触済',prio:'中',contactDate:'',nextDeadline:'2026-09-30',nextAction:'',memo:'英語での応募が必要。グローバル展開の足がかりとして検討。',phase:'情報収集',quarter:'Q3',amount:'不明',value:'グローバル展開',efficiency:'中',contact:'メッセージ'},
+    {id:40,name:'経産省 スタートアップ育成5か年計画',company:'経産省 スタートアップ育成5か年計画',src:'accel',person:'田中',role:'AE',status:'進行中',stage:'商談化',prio:'高',contactDate:'',nextDeadline:'2026-07-18',nextAction:'',memo:'担当官とのミーティング設定済み。最終資料の調整中。',phase:'プレゼン準備',quarter:'Q3',amount:'最大3,000万円',value:'政府認定＋資金',efficiency:'高',contact:'面談'},
+    {id:41,name:'三菱地所アクセラレーター2026',company:'三菱地所アクセラレーター2026',src:'accel',person:'山田',role:'SM',status:'進行中',stage:'提出済',prio:'高',contactDate:'',nextDeadline:'2026-07-22',nextAction:'',memo:'不動産DX枠で選考通過。次フェーズのプレゼン待ち。',phase:'書類選考',quarter:'Q3',amount:'支援金500万＋オフィス',value:'拠点＋販路',efficiency:'高',contact:'メッセージ'},
+    {id:42,name:'リクルート スタートアップ共創プログラム',company:'リクルート スタートアップ共創プログラム',src:'accel',person:'鈴木',role:'AE',status:'進行中',stage:'接触済',prio:'中',contactDate:'',nextDeadline:'2026-08-05',nextAction:'',memo:'HR領域のパートナー連携として検討中。担当部署と調整中。',phase:'情報設計・作成',quarter:'Q3',amount:'条件アリ',value:'HR業界開拓',efficiency:'中',contact:'メッセージ'},
 
     // 展示会追加
-    {id:24,name:'株式会社インフラテック',company:'株式会社インフラテック',src:'expo',person:'田中',role:'応対者',status:'フォロー中',prio:'高',date:'2026-04-10',memo:'インフラ老朽化対策に関心高い。予算確保済み。',expoName:'産業DX総合展2025夏',industry:'インフラ',needs:'IoT監視',budget:'500万〜',timing:'3ヶ月以内',decision:'あり',follow:'返信あり',scale:'大規模',contact:'—',name2:'石川 大輔',dept:'設備管理部',role2:'部長'},
-    {id:25,name:'医療法人ヘルスケアソリューションズ',company:'医療法人ヘルスケアソリューションズ',src:'expo',person:'鈴木',role:'応対者',status:'新規',prio:'中',date:'2026-04-11',memo:'電子カルテ連携に興味。コンプライアンス確認が必要。',expoName:'産業DX総合展2025夏',industry:'医療',needs:'電子カルテ連携',budget:'100〜500万',timing:'一年以内',decision:'なし',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'吉村 博子',dept:'情報管理室',role2:'室長'},
-    {id:26,name:'株式会社ロジスティクスワン',company:'株式会社ロジスティクスワン',src:'expo',person:'山田',role:'引継担当',status:'アポ取得',prio:'高',date:'2026-05-22',memo:'倉庫の自動化ニーズが明確。競合比較中とのこと。',expoName:'CEATEC 2025',industry:'物流',needs:'倉庫自動化',budget:'500万〜',timing:'すでに導入を検討している',decision:'あり',follow:'アポ取得',scale:'大規模',contact:'logistics@one.example',name2:'前田 健太',dept:'物流企画部',role2:'次長'},
-    {id:27,name:'国立大学法人A大学',company:'国立大学法人A大学',src:'expo',person:'佐藤',role:'応対者',status:'返信待ち',prio:'低',date:'2026-05-23',memo:'研究用途での導入検討。予算規模が小さいが長期関係性に期待。',expoName:'CEATEC 2025',industry:'教育',needs:'研究データ管理',budget:'〜100万',timing:'未定',decision:'なし',follow:'送付済み',scale:'小規模',contact:'—',name2:'岡田 理恵',dept:'情報基盤センター',role2:'准教授'},
-    {id:28,name:'株式会社ファイナンスDX',company:'株式会社ファイナンスDX',src:'expo',person:'田中',role:'引継担当',status:'フォロー中',prio:'高',date:'2026-06-12',memo:'FinTech領域の大手。決済処理の効率化ニーズ。',expoName:'新技術創出交流会2025',industry:'金融',needs:'決済処理効率化',budget:'500万〜',timing:'6ヶ月以内',decision:'あり',follow:'返信あり',scale:'大規模',contact:'dx@fintech.example',name2:'西田 誠一',dept:'デジタル推進部',role2:'部長'},
-    {id:29,name:'株式会社セキュアシールド',company:'株式会社セキュアシールド',src:'expo',person:'鈴木',role:'応対者',status:'新規',prio:'中',date:'2026-06-13',memo:'サイバーセキュリティ強化が急務とのこと。',expoName:'新技術創出交流会2025',industry:'セキュリティ',needs:'ゼロトラスト導入',budget:'100〜500万',timing:'3ヶ月以内',decision:'不明',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'川口 誠',dept:'情報セキュリティ室',role2:'室長'},
-    {id:30,name:'株式会社コンサルアドバイザーズ',company:'株式会社コンサルアドバイザーズ',src:'expo',person:'山田',role:'応対者',status:'アポ取得',prio:'高',date:'2026-06-21',memo:'DX支援の下流工程をアウトソースしたい意向。パートナー協業が本命。',expoName:'Eight EXPO 2026 Spring',industry:'コンサル',needs:'DX支援ツール',budget:'500万〜',timing:'すでに導入を検討している',decision:'あり',follow:'アポ取得',scale:'大規模',contact:'info@consultadvisors.example',name2:'高橋 恵理',dept:'デジタル推進グループ',role2:'マネージャー'},
-    {id:31,name:'株式会社メディアプロダクション',company:'株式会社メディアプロダクション',src:'expo',person:'佐藤',role:'応対者',status:'フォロー中',prio:'中',date:'2026-06-22',memo:'コンテンツ制作にAI活用を検討中。',expoName:'Eight EXPO 2026 Spring',industry:'広告',needs:'AI活用コンテンツ制作',budget:'100〜500万',timing:'6ヶ月以内',decision:'なし',follow:'送付済み',scale:'小規模',contact:'—',name2:'村田 さくら',dept:'クリエイティブ部',role2:'プロデューサー'},
+    {id:24,name:'株式会社インフラテック',company:'株式会社インフラテック',src:'expo',person:'田中',role:'応対者',status:'フォロー中',prio:'高',contactDate:'2026-04-10',nextDeadline:'',nextAction:'',memo:'インフラ老朽化対策に関心高い。予算確保済み。',expoName:'産業DX総合展2025夏',industry:'インフラ',needs:'IoT監視',budget:'500万〜',timing:'3ヶ月以内',decision:'あり',follow:'返信あり',scale:'大規模',contact:'—',name2:'石川 大輔',dept:'設備管理部',role2:'部長'},
+    {id:25,name:'医療法人ヘルスケアソリューションズ',company:'医療法人ヘルスケアソリューションズ',src:'expo',person:'鈴木',role:'応対者',status:'新規',prio:'中',contactDate:'2026-04-11',nextDeadline:'',nextAction:'',memo:'電子カルテ連携に興味。コンプライアンス確認が必要。',expoName:'産業DX総合展2025夏',industry:'医療',needs:'電子カルテ連携',budget:'100〜500万',timing:'一年以内',decision:'なし',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'吉村 博子',dept:'情報管理室',role2:'室長'},
+    {id:26,name:'株式会社ロジスティクスワン',company:'株式会社ロジスティクスワン',src:'expo',person:'山田',role:'引継担当',status:'アポ取得',prio:'高',contactDate:'2026-05-22',nextDeadline:'',nextAction:'',memo:'倉庫の自動化ニーズが明確。競合比較中とのこと。',expoName:'CEATEC 2025',industry:'物流',needs:'倉庫自動化',budget:'500万〜',timing:'すでに導入を検討している',decision:'あり',follow:'アポ取得',scale:'大規模',contact:'logistics@one.example',name2:'前田 健太',dept:'物流企画部',role2:'次長'},
+    {id:27,name:'国立大学法人A大学',company:'国立大学法人A大学',src:'expo',person:'佐藤',role:'応対者',status:'返信待ち',prio:'低',contactDate:'2026-05-23',nextDeadline:'',nextAction:'',memo:'研究用途での導入検討。予算規模が小さいが長期関係性に期待。',expoName:'CEATEC 2025',industry:'教育',needs:'研究データ管理',budget:'〜100万',timing:'未定',decision:'なし',follow:'送付済み',scale:'小規模',contact:'—',name2:'岡田 理恵',dept:'情報基盤センター',role2:'准教授'},
+    {id:28,name:'株式会社ファイナンスDX',company:'株式会社ファイナンスDX',src:'expo',person:'田中',role:'引継担当',status:'フォロー中',prio:'高',contactDate:'2026-06-12',nextDeadline:'',nextAction:'',memo:'FinTech領域の大手。決済処理の効率化ニーズ。',expoName:'新技術創出交流会2025',industry:'金融',needs:'決済処理効率化',budget:'500万〜',timing:'6ヶ月以内',decision:'あり',follow:'返信あり',scale:'大規模',contact:'dx@fintech.example',name2:'西田 誠一',dept:'デジタル推進部',role2:'部長'},
+    {id:29,name:'株式会社セキュアシールド',company:'株式会社セキュアシールド',src:'expo',person:'鈴木',role:'応対者',status:'新規',prio:'中',contactDate:'2026-06-13',nextDeadline:'',nextAction:'',memo:'サイバーセキュリティ強化が急務とのこと。',expoName:'新技術創出交流会2025',industry:'セキュリティ',needs:'ゼロトラスト導入',budget:'100〜500万',timing:'3ヶ月以内',decision:'不明',follow:'メール作成済み',scale:'中規模',contact:'—',name2:'川口 誠',dept:'情報セキュリティ室',role2:'室長'},
+    {id:30,name:'株式会社コンサルアドバイザーズ',company:'株式会社コンサルアドバイザーズ',src:'expo',person:'山田',role:'応対者',status:'アポ取得',prio:'高',contactDate:'2026-06-21',nextDeadline:'',nextAction:'',memo:'DX支援の下流工程をアウトソースしたい意向。パートナー協業が本命。',expoName:'Eight EXPO 2026 Spring',industry:'コンサル',needs:'DX支援ツール',budget:'500万〜',timing:'すでに導入を検討している',decision:'あり',follow:'アポ取得',scale:'大規模',contact:'info@consultadvisors.example',name2:'高橋 恵理',dept:'デジタル推進グループ',role2:'マネージャー'},
+    {id:31,name:'株式会社メディアプロダクション',company:'株式会社メディアプロダクション',src:'expo',person:'佐藤',role:'応対者',status:'フォロー中',prio:'中',contactDate:'2026-06-22',nextDeadline:'',nextAction:'',memo:'コンテンツ制作にAI活用を検討中。',expoName:'Eight EXPO 2026 Spring',industry:'広告',needs:'AI活用コンテンツ制作',budget:'100〜500万',timing:'6ヶ月以内',decision:'なし',follow:'送付済み',scale:'小規模',contact:'—',name2:'村田 さくら',dept:'クリエイティブ部',role2:'プロデューサー'},
 
     // イベント
-    {id:32,name:'有限会社サクラテック',company:'有限会社サクラテック',src:'event',person:'佐藤',role:'担当',status:'完了',prio:'中',date:'2026-06-05',memo:'スタートアップ交流会で名刺交換。フォローメール送付済み。',contact:'info@sakuratech.example',name2:'吉田 真一',dept:'事業開発部',role2:'代表'},
-    {id:33,name:'株式会社イノベーションハブ',company:'株式会社イノベーションハブ',src:'event',person:'佐藤',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-05',memo:'VCからの紹介。CTOと面識あり。継続フォロー中。',contact:'contact@ihub.example',name2:'木村 拓也',dept:'技術部',role2:'CTO'},
-    {id:34,name:'合同会社ビズパートナー',company:'合同会社ビズパートナー',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'低',date:'2026-06-12',memo:'懇親会で名刺交換のみ。フォロー検討中。',contact:'—',name2:'井上 恵子',dept:'営業部',role2:'部長'},
-    {id:35,name:'株式会社グロースデザイン',company:'株式会社グロースデザイン',src:'event',person:'田中',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-15',memo:'登壇後の懇親会で接触。プロダクトに強い興味。来週ミーティング設定予定。',contact:'growth@design.example',name2:'藤田 健一',dept:'事業戦略部',role2:'執行役員'},
-    {id:36,name:'NPO法人テックフォーグッド',company:'NPO法人テックフォーグッド',src:'event',person:'山田',role:'担当',status:'完了',prio:'低',date:'2026-06-18',memo:'社会課題×テックイベントで接触。予算規模小さいが認知拡大目的で関係継続。',contact:'info@tech4good.example',name2:'中島 麻衣',dept:'事務局',role2:'局長'},
-    {id:37,name:'株式会社AIベンチャーズ',company:'株式会社AIベンチャーズ',src:'event',person:'鈴木',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-20',memo:'AI特化VCのCOOと接触。出資先スタートアップへの紹介を打診中。',contact:'coo@aiventures.example',name2:'坂本 直之',dept:'投資チーム',role2:'COO'},
-    {id:38,name:'株式会社デジタルガバメント',company:'株式会社デジタルガバメント',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'中',date:'2026-06-25',memo:'行政DXセミナーで名刺交換。公共調達への関心あり。',contact:'—',name2:'小林 聡',dept:'公共事業部',role2:'部長'},
-    {id:39,name:'合同会社スマートエネルギー',company:'合同会社スマートエネルギー',src:'event',person:'田中',role:'担当',status:'新規',prio:'低',date:'2026-06-28',memo:'エネルギー×ITイベントで接触。まず資料送付予定。',contact:'info@smartenergy.example',name2:'平井 達也',dept:'技術部',role2:'主任'},
-    {id:43,name:'株式会社フィンテックラボ',company:'株式会社フィンテックラボ',src:'event',person:'山田',role:'担当',status:'フォロー中',prio:'高',date:'2026-07-01',memo:'FinTech企業の事業責任者。APIを活用した金融データ連携に関心。具体的なPoC提案を依頼された。',contact:'lab@fintechlab.example',name2:'渡辺 大樹',dept:'プロダクト部',role2:'VP of Product'},
-    {id:44,name:'株式会社クラウドネクスト',company:'株式会社クラウドネクスト',src:'event',person:'鈴木',role:'担当',status:'完了',prio:'中',date:'2026-07-02',memo:'SaaS導入支援セミナーで登壇後に接触。クラウド移行案件として引き続き関係継続予定。',contact:'info@cloudnext.example',name2:'大野 剛',dept:'インフラ部',role2:'部長'},
-    {id:45,name:'合同会社グリーンテック',company:'合同会社グリーンテック',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'低',date:'2026-07-03',memo:'環境×テックイベントで名刺交換。サステナビリティ領域のDX推進に関心。まずメール送付予定。',contact:'—',name2:'森田 悠',dept:'サービス開発部',role2:'代表'},
-    {id:46,name:'株式会社メドテックジャパン',company:'株式会社メドテックジャパン',src:'event',person:'田中',role:'担当',status:'フォロー中',prio:'高',date:'2026-06-30',memo:'医療機器メーカーのDX担当役員と接触。臨床データ管理のデジタル化を検討中。来週デモ実施予定。',contact:'dx@medtech-jp.example',name2:'岡本 信夫',dept:'デジタル戦略室',role2:'室長'},
+    {id:32,name:'有限会社サクラテック',company:'有限会社サクラテック',src:'event',person:'佐藤',role:'担当',status:'完了',prio:'中',contactDate:'2026-06-05',nextDeadline:'',nextAction:'',memo:'スタートアップ交流会で名刺交換。フォローメール送付済み。',contact:'info@sakuratech.example',name2:'吉田 真一',dept:'事業開発部',role2:'代表'},
+    {id:33,name:'株式会社イノベーションハブ',company:'株式会社イノベーションハブ',src:'event',person:'佐藤',role:'担当',status:'フォロー中',prio:'高',contactDate:'2026-06-05',nextDeadline:'',nextAction:'',memo:'VCからの紹介。CTOと面識あり。継続フォロー中。',contact:'contact@ihub.example',name2:'木村 拓也',dept:'技術部',role2:'CTO'},
+    {id:34,name:'合同会社ビズパートナー',company:'合同会社ビズパートナー',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'低',contactDate:'2026-06-12',nextDeadline:'',nextAction:'',memo:'懇親会で名刺交換のみ。フォロー検討中。',contact:'—',name2:'井上 恵子',dept:'営業部',role2:'部長'},
+    {id:35,name:'株式会社グロースデザイン',company:'株式会社グロースデザイン',src:'event',person:'田中',role:'担当',status:'フォロー中',prio:'高',contactDate:'2026-06-15',nextDeadline:'',nextAction:'',memo:'登壇後の懇親会で接触。プロダクトに強い興味。来週ミーティング設定予定。',contact:'growth@design.example',name2:'藤田 健一',dept:'事業戦略部',role2:'執行役員'},
+    {id:36,name:'NPO法人テックフォーグッド',company:'NPO法人テックフォーグッド',src:'event',person:'山田',role:'担当',status:'完了',prio:'低',contactDate:'2026-06-18',nextDeadline:'',nextAction:'',memo:'社会課題×テックイベントで接触。予算規模小さいが認知拡大目的で関係継続。',contact:'info@tech4good.example',name2:'中島 麻衣',dept:'事務局',role2:'局長'},
+    {id:37,name:'株式会社AIベンチャーズ',company:'株式会社AIベンチャーズ',src:'event',person:'鈴木',role:'担当',status:'フォロー中',prio:'高',contactDate:'2026-06-20',nextDeadline:'',nextAction:'',memo:'AI特化VCのCOOと接触。出資先スタートアップへの紹介を打診中。',contact:'coo@aiventures.example',name2:'坂本 直之',dept:'投資チーム',role2:'COO'},
+    {id:38,name:'株式会社デジタルガバメント',company:'株式会社デジタルガバメント',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'中',contactDate:'2026-06-25',nextDeadline:'',nextAction:'',memo:'行政DXセミナーで名刺交換。公共調達への関心あり。',contact:'—',name2:'小林 聡',dept:'公共事業部',role2:'部長'},
+    {id:39,name:'合同会社スマートエネルギー',company:'合同会社スマートエネルギー',src:'event',person:'田中',role:'担当',status:'新規',prio:'低',contactDate:'2026-06-28',nextDeadline:'',nextAction:'',memo:'エネルギー×ITイベントで接触。まず資料送付予定。',contact:'info@smartenergy.example',name2:'平井 達也',dept:'技術部',role2:'主任'},
+    {id:43,name:'株式会社フィンテックラボ',company:'株式会社フィンテックラボ',src:'event',person:'山田',role:'担当',status:'フォロー中',prio:'高',contactDate:'2026-07-01',nextDeadline:'',nextAction:'',memo:'FinTech企業の事業責任者。APIを活用した金融データ連携に関心。具体的なPoC提案を依頼された。',contact:'lab@fintechlab.example',name2:'渡辺 大樹',dept:'プロダクト部',role2:'VP of Product'},
+    {id:44,name:'株式会社クラウドネクスト',company:'株式会社クラウドネクスト',src:'event',person:'鈴木',role:'担当',status:'完了',prio:'中',contactDate:'2026-07-02',nextDeadline:'',nextAction:'',memo:'SaaS導入支援セミナーで登壇後に接触。クラウド移行案件として引き続き関係継続予定。',contact:'info@cloudnext.example',name2:'大野 剛',dept:'インフラ部',role2:'部長'},
+    {id:45,name:'合同会社グリーンテック',company:'合同会社グリーンテック',src:'event',person:'佐藤',role:'担当',status:'新規',prio:'低',contactDate:'2026-07-03',nextDeadline:'',nextAction:'',memo:'環境×テックイベントで名刺交換。サステナビリティ領域のDX推進に関心。まずメール送付予定。',contact:'—',name2:'森田 悠',dept:'サービス開発部',role2:'代表'},
+    {id:46,name:'株式会社メドテックジャパン',company:'株式会社メドテックジャパン',src:'event',person:'田中',role:'担当',status:'フォロー中',prio:'高',contactDate:'2026-06-30',nextDeadline:'',nextAction:'',memo:'医療機器メーカーのDX担当役員と接触。臨床データ管理のデジタル化を検討中。来週デモ実施予定。',contact:'dx@medtech-jp.example',name2:'岡本 信夫',dept:'デジタル戦略室',role2:'室長'},
 ];
 
 // ━━ STORAGE ━━
@@ -1396,7 +1404,7 @@ function saveToStorage(){
     try{ localStorage.setItem('lead_hub_data', JSON.stringify(DATA)); }
     catch(e){ showToast('保存に失敗しました（ストレージ容量不足の可能性があります）', 'error'); }
 }
-const DATA_VERSION = '2026-07-02-v2';
+const DATA_VERSION = '2026-07-06-v3';
 function loadFromStorage(){
     try{
         const ver = localStorage.getItem('lead_hub_version');
@@ -1424,8 +1432,8 @@ function setRpFilter(key, btn) {
 
 function getRpData() {
     return DATA.filter(d => {
-        const fy = getFY(d.date);
-        const q  = getQuarter(d.date);
+        const fy = getFY(d.contactDate);
+        const q  = getQuarter(d.contactDate);
         if (RP_FILTER.fy !== 'all' && String(fy) !== RP_FILTER.fy) return false;
         if (RP_FILTER.quarter !== 'all' && q !== RP_FILTER.quarter) return false;
         return true;
@@ -1695,7 +1703,7 @@ function render(){
             <th onclick="setSort('prio')">優先度 <span id="sh-prio"></span></th>
             <th>ステータス</th>
             <th onclick="setSort('person')">担当者 <span id="sh-person"></span></th>
-            <th onclick="setSort('date')">〆切 <span id="sh-date"></span></th>
+            <th onclick="setSort('nextDeadline')">〆切 <span id="sh-nextDeadline"></span></th>
             ${extraTh}
         </tr>`;
     }
@@ -1739,7 +1747,7 @@ function render(){
         });
     }
     // ソートインジケーター更新
-    ['name','prio','person','date'].forEach(k=>{
+    ['name','prio','person','nextDeadline'].forEach(k=>{
         const el = document.getElementById('sh-'+k);
         if(el) el.textContent = sortKey===k ? (sortDir===1?' ▲':' ▼') : '';
     });
@@ -1793,8 +1801,8 @@ function render(){
             } else {
                 personCell = '<span style="color:var(--muted)">—</span>';
             }
-            // 〆切列: アクセラのみ表示
-            const deadlineCell = r.src==='accel' ? `<div style="font-size:.78rem">${fmtDate(r.date)}</div>` : '<span style="color:var(--muted)">—</span>';
+            // 〆切列: nextDeadlineがあれば全ソースで表示
+            const deadlineCell = r.nextDeadline ? `<div style="font-size:.78rem">${fmtDate(r.nextDeadline)}</div>` : '<span style="color:var(--muted)">—</span>';
             const extraCells = extraCols.map(c=>`<td style="font-size:.75rem;color:var(--sub);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.val(r))}</td>`).join('');
             return `<tr onclick="openP(${r.id})" class="${selId===r.id?'sel':''}">
                 <td><div class="c-main">${esc(r.name)}</div>${r.name!==r.company?`<div class="c-sub">${esc(r.company)}</div>`:''}</td>
@@ -1831,7 +1839,7 @@ function showDealModal(title, deals){
             } else {
                 personCell = '<span style="color:var(--muted)">—</span>';
             }
-            const deadlineCell = r.src==='accel' ? `<div style="font-size:.75rem">${fmtDate(r.date)}</div>` : '<span style="color:var(--muted)">—</span>';
+            const deadlineCell = r.nextDeadline ? `<div style="font-size:.75rem">${fmtDate(r.nextDeadline)}</div>` : '<span style="color:var(--muted)">—</span>';
             return `<tr onclick="openPFromModal(${r.id})">
                 <td><div class="c-main">${esc(r.name)}</div>${r.name!==r.company?`<div class="c-sub">${esc(r.company)}</div>`:''}</td>
                 <td><span class="${srcBadge[r.src]}">${srcLabel[r.src]}</span></td>
@@ -1891,7 +1899,6 @@ function openP(id){
         // 基本情報: OI案件名・企業名・案件分類・サイト・優先度
         h+=`<div class="p-sec"><div class="p-sec-t">基本情報</div>
             ${pRow('OI案件名', r.name)}
-            ${pRow('企業名', r.company)}
             ${pRow('案件分類', r.classification)}
             ${pRow('サイト', r.site)}
             <div class="p-row"><div class="p-k">優先度</div><div class="p-v"><span class="${prioClass[r.prio]}">${esc(r.prio||'—')}</span></div></div>
@@ -1917,10 +1924,12 @@ function openP(id){
             ${pRow('レビュワー', r.reviewer)}
             ${pRow('SM', r.sm)}
         </div>`;
-        // 日程: 早期〆切・〆切・〆切まで
+        // 日程: 早期〆切・接触開始日・ネクストアクション〆切・〆切まで
         h+=`<div class="p-sec"><div class="p-sec-t">日程</div>
             ${pRow('早期〆切', r.earlyDeadline ? fmtDate(r.earlyDeadline) : null)}
-            ${pRow('〆切', fmtDate(r.date))}
+            ${pRow('接触開始日', fmtDate(r.contactDate))}
+            ${pRow('ネクストアクション〆切', fmtDate(r.nextDeadline))}
+            ${pRow('ネクストアクション', r.nextAction)}
             ${pRow('〆切まで', r.daysLeft)}
         </div>`;
         // 準備: 事前コンタクト・プログラム概要・keep・problem・try
@@ -1994,7 +2003,9 @@ function openP(id){
         // 展示会情報
         h+=`<div class="p-sec"><div class="p-sec-t">展示会情報</div>
             ${pRow('展示会名', r.expoName)}
-            ${pRow('日付', fmtDate(r.date))}
+            ${pRow('接触開始日', fmtDate(r.contactDate))}
+            ${pRow('ネクストアクション〆切', fmtDate(r.nextDeadline))}
+            ${pRow('ネクストアクション', r.nextAction)}
         </div>`;
         // 名刺
         h+=`<div class="p-sec" id="p-card-sec"><div class="p-sec-t">名刺</div>`;
@@ -2028,6 +2039,12 @@ function openP(id){
         h+=`<div class="p-sec"><div class="p-sec-t">フォロー状況</div>
             ${pRow('フォロー優先度', r.prio)}
             ${pRow('読取ステータス', r.readStatus)}
+        </div>`;
+        // 日程
+        h+=`<div class="p-sec"><div class="p-sec-t">日程</div>
+            ${pRow('接触開始日', fmtDate(r.contactDate))}
+            ${pRow('ネクストアクション〆切', fmtDate(r.nextDeadline))}
+            ${pRow('ネクストアクション', r.nextAction)}
         </div>`;
         // メモ
         h+=`<div class="p-sec"><div class="p-sec-t">メモ</div><div class="p-memo">${esc(r.memo||'なし')}</div></div>`;
@@ -2152,7 +2169,7 @@ function initAccelCharts(){
     const now = new Date();
     const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
     const ymLabel = now.getFullYear()+'年'+(now.getMonth()+1)+'月';
-    const thisMonthDeals = ac.filter(d=>d.date&&d.date.startsWith(ym));
+    const thisMonthDeals = ac.filter(d=>d.nextDeadline&&d.nextDeadline.startsWith(ym));
     const thisMonth  = thisMonthDeals.length;
     window._acKpiDeals = { all: ac, inProgress: inProgressDeals, adopted: adoptedDeals, thisMonth: thisMonthDeals };
     document.getElementById('ac-k0').innerHTML = ac.length+'<small>件</small>';
@@ -2366,9 +2383,9 @@ function initAccelCharts(){
         monthLabels.push(label);
     }
 
-    const applyByMonth  = monthKeys.map(m=>ac.filter(d=>d.date&&d.date.startsWith(m)&&['提出済','商談化','採択！！'].includes(d.stage)).length);
-    const dealByMonth   = monthKeys.map(m=>ac.filter(d=>d.date&&d.date.startsWith(m)&&['商談化','採択！！'].includes(d.stage)).length);
-    const adoptByMonth  = monthKeys.map(m=>ac.filter(d=>d.date&&d.date.startsWith(m)&&d.stage==='採択！！').length);
+    const applyByMonth  = monthKeys.map(m=>ac.filter(d=>d.contactDate&&d.contactDate.startsWith(m)&&['提出済','商談化','採択！！'].includes(d.stage)).length);
+    const dealByMonth   = monthKeys.map(m=>ac.filter(d=>d.contactDate&&d.contactDate.startsWith(m)&&['商談化','採択！！'].includes(d.stage)).length);
+    const adoptByMonth  = monthKeys.map(m=>ac.filter(d=>d.contactDate&&d.contactDate.startsWith(m)&&d.stage==='採択！！').length);
 
     const barTopLabelPlugin = {
         id:'barTopLabel',
@@ -2429,7 +2446,7 @@ function initExpoCharts(){
         const targets = ex
             .filter(d=>d.status!=='アポ取得'&&d.follow!=='アポ取得')
             .map(d=>{
-                const base = new Date(d.date||''); base.setHours(0,0,0,0);
+                const base = new Date(d.contactDate||''); base.setHours(0,0,0,0);
                 const days = isNaN(base) ? null : Math.floor((today-base)/86400000);
                 return {...d, days};
             })
@@ -2738,9 +2755,9 @@ function renderReport(){
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
         monthLabels.push(`${d.getMonth()+1}月`);
-        monthAccel.push(rpData.filter(r=>r.src==='accel'&&r.date&&r.date.startsWith(ym)).length);
-        monthExpo.push(rpData.filter(r=>r.src==='expo'&&r.date&&r.date.startsWith(ym)).length);
-        monthEvent.push(rpData.filter(r=>r.src==='event'&&r.date&&r.date.startsWith(ym)).length);
+        monthAccel.push(rpData.filter(r=>r.src==='accel'&&r.contactDate&&r.contactDate.startsWith(ym)).length);
+        monthExpo.push(rpData.filter(r=>r.src==='expo'&&r.contactDate&&r.contactDate.startsWith(ym)).length);
+        monthEvent.push(rpData.filter(r=>r.src==='event'&&r.contactDate&&r.contactDate.startsWith(ym)).length);
     }
     if(_charts['rp-ch-monthly']) _charts['rp-ch-monthly'].destroy();
     _charts['rp-ch-monthly'] = new Chart(document.getElementById('rp-ch-monthly').getContext('2d'), {
@@ -2783,25 +2800,25 @@ function renderReport(){
         }
     });
 
-    // ── 〆切アラート（アクセラのみ）──
+    // ── 〆切アラート（全ソース対象）──
     const todayStr = today.toISOString().slice(0,10);
     const in7 = new Date(today); in7.setDate(in7.getDate()+7);
     const in7Str = in7.toISOString().slice(0,10);
-    const accelAll = DATA.filter(d=>d.src==='accel'&&d.date);
-    const alertSoon     = accelAll.filter(d=>d.date>=todayStr&&d.date<=in7Str);
-    const alertOverdue  = accelAll.filter(d=>d.date<todayStr);
+    const allWithDeadline = DATA.filter(d=>d.nextDeadline);
+    const alertSoon     = allWithDeadline.filter(d=>d.nextDeadline>=todayStr&&d.nextDeadline<=in7Str);
+    const alertOverdue  = allWithDeadline.filter(d=>d.nextDeadline<todayStr);
     function daysDiff(dateStr){
         const diff = Math.round((new Date(dateStr)-today)/(1000*60*60*24));
         return diff;
     }
     function alertRow(r){
-        const diff = daysDiff(r.date);
+        const diff = daysDiff(r.nextDeadline);
         const daysLabel = diff===0?'本日':diff>0?`${diff}日後`:`${Math.abs(diff)}日超過`;
         const daysColor = diff<0?'color:var(--red)':diff<=3?'color:var(--amber)':'color:var(--text)';
         return `<div class="alert-row" onclick="openP(${r.id})">
             <div class="alert-row-name">${esc(r.name)}</div>
             <div class="alert-row-person">${esc(r.person)}</div>
-            <div class="alert-row-days" style="${daysColor}">${daysLabel}（${r.date}）</div>
+            <div class="alert-row-days" style="${daysColor}">${daysLabel}（${r.nextDeadline}）</div>
         </div>`;
     }
     const alertEl = document.getElementById('rp-alert-section');
@@ -2810,13 +2827,13 @@ function renderReport(){
             <div class="alert-sub-title">
                 <span class="alert-badge warn">7日以内</span> 〆切が近い案件
             </div>
-            ${alertSoon.length ? alertSoon.sort((a,b)=>a.date.localeCompare(b.date)).map(alertRow).join('') : '<div class="alert-empty">該当なし</div>'}
+            ${alertSoon.length ? alertSoon.sort((a,b)=>a.nextDeadline.localeCompare(b.nextDeadline)).map(alertRow).join('') : '<div class="alert-empty">該当なし</div>'}
         </div>
         <div class="alert-subsection">
             <div class="alert-sub-title">
                 <span class="alert-badge danger">期限超過</span> 〆切を過ぎた案件
             </div>
-            ${alertOverdue.length ? alertOverdue.sort((a,b)=>b.date.localeCompare(a.date)).map(alertRow).join('') : '<div class="alert-empty">該当なし</div>'}
+            ${alertOverdue.length ? alertOverdue.sort((a,b)=>b.nextDeadline.localeCompare(a.nextDeadline)).map(alertRow).join('') : '<div class="alert-empty">該当なし</div>'}
         </div>`;
 
     // ── ソース別商談化率 ──
@@ -2871,9 +2888,9 @@ function renderReport(){
     const staleThreshold = new Date(today); staleThreshold.setDate(staleThreshold.getDate()-30);
     const staleStr = staleThreshold.toISOString().slice(0,10);
     const staleLeads = rpData.filter(d=>{
-        const lastDate = d.updated || d.date;
+        const lastDate = d.updated || d.contactDate;
         return lastDate && lastDate < staleStr;
-    }).sort((a,b)=>(a.updated||a.date).localeCompare(b.updated||b.date));
+    }).sort((a,b)=>(a.updated||a.contactDate).localeCompare(b.updated||b.contactDate));
     const staleEl = document.getElementById('rp-stale-section');
     if(staleLeads.length===0){
         staleEl.innerHTML = `<div class="alert-subsection"><div class="stale-ok">✓ 全リード 最終更新30日以内です</div></div>`;
@@ -2881,7 +2898,7 @@ function renderReport(){
         staleEl.innerHTML = `<div class="alert-subsection">
             <div class="alert-sub-title"><span class="alert-badge danger">${staleLeads.length}件</span> 30日以上未更新</div>
             ${staleLeads.map(r=>{
-                const lastDate = r.updated||r.date;
+                const lastDate = r.updated||r.contactDate;
                 const elapsed = Math.round((today - new Date(lastDate))/(1000*60*60*24));
                 return `<div class="stale-row" onclick="openP(${r.id})">
                     <div class="alert-row-name">${esc(r.name)}</div>
@@ -3000,12 +3017,14 @@ function openEditModal(idxOverride){
     switchAddSrc(r.src, srcBtn);
 
     // 共通フィールド
-    document.getElementById('af-name').value    = r.name || '';
-    document.getElementById('af-company').value = r.src !== 'accel' ? (r.company || '') : '';
-    document.getElementById('af-prio').value    = r.prio || '中';
-    document.getElementById('af-date').value    = r.date || '';
-    document.getElementById('af-person').value  = r.person || '田中';
-    document.getElementById('af-memo').value    = r.memo || '';
+    document.getElementById('af-name').value        = r.name || '';
+    document.getElementById('af-company').value     = r.src !== 'accel' ? (r.company || '') : '';
+    document.getElementById('af-prio').value        = r.prio || '中';
+    document.getElementById('af-contactDate').value = r.contactDate || '';
+    document.getElementById('af-nextDeadline').value= r.nextDeadline || '';
+    document.getElementById('af-nextAction').value  = r.nextAction || '';
+    document.getElementById('af-person').value      = r.person || '田中';
+    document.getElementById('af-memo').value        = r.memo || '';
     // role と status はoptions生成後に値セット
     const roleEl = document.getElementById('af-role');
     if([...roleEl.options].some(o=>o.value===r.role)) roleEl.value = r.role;
@@ -3081,7 +3100,7 @@ function resetAddForm(){
     updateStatusOptions('accel');
     updateRoleOptions('accel');
     // clear inputs
-    ['af-name','af-company','af-memo','af-date','af-amount','af-value',
+    ['af-name','af-company','af-memo','af-contactDate','af-nextDeadline','af-nextAction','af-amount','af-value',
      'af-name2-expo','af-role2-expo','af-dept-expo','af-contact-expo','af-needs',
      'af-name2-event','af-role2-event','af-dept-event','af-contact-event'
     ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -3155,13 +3174,15 @@ function submitAddForm(){
     const base = {
         id: DATA.reduce((m,d)=>Math.max(m,d.id),0)+1,
         name, company,
-        src:    addSrc,
-        person: personEl.value,
-        role:   document.getElementById('af-role').value,
-        status: statusEl.value,
-        prio:   document.getElementById('af-prio').value,
-        date:   document.getElementById('af-date').value || null,
-        memo:   document.getElementById('af-memo').value.trim() || null,
+        src:         addSrc,
+        person:      personEl.value,
+        role:        document.getElementById('af-role').value,
+        status:      statusEl.value,
+        prio:        document.getElementById('af-prio').value,
+        contactDate: document.getElementById('af-contactDate').value || '',
+        nextDeadline:document.getElementById('af-nextDeadline').value || '',
+        nextAction:  document.getElementById('af-nextAction').value.trim(),
+        memo:        document.getElementById('af-memo').value.trim() || null,
     };
 
     if(addSrc==='accel'){
