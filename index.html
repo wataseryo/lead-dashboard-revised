@@ -1148,6 +1148,33 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
                     <input class="form-input" id="af-value" type="text" placeholder="例: 技術認定＋資金">
                 </div>
             </div>
+            <div class="form-sec">担当者詳細</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-label">SS</label><input class="form-input" id="af-ss" type="text" placeholder="例: 田中"></div>
+                <div class="form-group"><label class="form-label">AE</label><input class="form-input" id="af-ae" type="text" placeholder="例: 鈴木"></div>
+                <div class="form-group"><label class="form-label">レビュワー</label><input class="form-input" id="af-reviewer" type="text" placeholder="例: 佐藤"></div>
+                <div class="form-group"><label class="form-label">SM</label><input class="form-input" id="af-sm" type="text" placeholder="例: 山田"></div>
+            </div>
+            <div class="form-sec">案件詳細</div>
+            <div class="form-grid">
+                <div class="form-group span2"><label class="form-label">案件分類</label><input class="form-input" id="af-classification" type="text" placeholder="例: 補助金・資金支援"></div>
+                <div class="form-group span2"><label class="form-label">サイト URL</label><input class="form-input" id="af-site" type="url" placeholder="https://..."></div>
+                <div class="form-group span2"><label class="form-label">＜OR条件＞</label><input class="form-input" id="af-orCondition" type="text" placeholder="OR条件"></div>
+                <div class="form-group"><label class="form-label">早期〆切</label><input class="form-input" id="af-earlyDeadline" type="date"></div>
+            </div>
+            <div class="form-sec">準備情報</div>
+            <div class="form-grid full">
+                <div class="form-group"><label class="form-label">プログラム概要</label><textarea class="form-input" id="af-programDesc" placeholder="プログラムの概要を記入..."></textarea></div>
+                <div class="form-group"><label class="form-label">keep</label><textarea class="form-input" id="af-keep" placeholder="keep..."></textarea></div>
+                <div class="form-group"><label class="form-label">problem</label><textarea class="form-input" id="af-problem" placeholder="problem..."></textarea></div>
+                <div class="form-group"><label class="form-label">try</label><textarea class="form-input" id="af-try" placeholder="try..."></textarea></div>
+            </div>
+            <div class="form-sec">リンク</div>
+            <div class="form-grid">
+                <div class="form-group span2"><label class="form-label">リンク</label><input class="form-input" id="af-link" type="url" placeholder="https://..."></div>
+                <div class="form-group span2"><label class="form-label">応募資料</label><input class="form-input" id="af-document" type="url" placeholder="https://..."></div>
+                <div class="form-group span2"><label class="form-label">案件別Docs</label><input class="form-input" id="af-docs" type="url" placeholder="https://..."></div>
+            </div>
         </div>
 
         <!-- ─── 展示会専用 ─── -->
@@ -1233,6 +1260,32 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
                     <input class="form-input" id="af-needs" type="text" placeholder="例: 業務効率化、AI導入">
                 </div>
             </div>
+            <div class="form-sec">詳細情報</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-label">応対者</label><input class="form-input" id="af-respondent" type="text" placeholder="例: 田中"></div>
+                <div class="form-group"><label class="form-label">引き継ぎ担当</label><input class="form-input" id="af-handover" type="text" placeholder="例: 鈴木"></div>
+                <div class="form-group"><label class="form-label">規模</label>
+                    <select class="form-input" id="af-scale">
+                        <option value="">—</option>
+                        <option value="大規模">大規模</option>
+                        <option value="中規模">中規模</option>
+                        <option value="小規模">小規模</option>
+                        <option value="スタートアップ">スタートアップ</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">参加目的</label><input class="form-input" id="af-purpose" type="text" placeholder="例: DX推進"></div>
+                <div class="form-group span2"><label class="form-label">すでに導入している技術</label><input class="form-input" id="af-existingTech" type="text"></div>
+                <div class="form-group span2"><label class="form-label">興味を持っている技術やサービス</label><input class="form-input" id="af-interestedTech" type="text"></div>
+                <div class="form-group span2"><label class="form-label">新しい技術の導入予定</label><input class="form-input" id="af-newTechPlan" type="text"></div>
+                <div class="form-group span2"><label class="form-label">意思決定基準</label><input class="form-input" id="af-decisionCriteria" type="text"></div>
+                <div class="form-group span2"><label class="form-label">ニーズ詳細</label><textarea class="form-input" id="af-needsDetail" placeholder="詳細なニーズ..."></textarea></div>
+                <div class="form-group span2"><label class="form-label">メール文</label><textarea class="form-input" id="af-mailText" placeholder="メール文テキスト..."></textarea></div>
+            </div>
+            <div class="form-grid" style="margin-top:8px;">
+                <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="af-isLead"> リードフラグ</label></div>
+                <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="af-followRequest"> フォロー送付依頼</label></div>
+                <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="af-mailCreated"> メール作成済み</label></div>
+            </div>
         </div>
 
         <!-- ─── イベント専用 ─── -->
@@ -1272,6 +1325,14 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
                     <label class="form-label">メール</label>
                     <input class="form-input" id="af-contact-event" type="email" placeholder="例: name@company.com">
                 </div>
+            </div>
+            <div class="form-sec">連絡先詳細</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-label">電話</label><input class="form-input" id="af-tel" type="tel" placeholder="例: 03-1234-5678"></div>
+                <div class="form-group"><label class="form-label">携帯</label><input class="form-input" id="af-mobile" type="tel" placeholder="例: 090-1234-5678"></div>
+                <div class="form-group span2"><label class="form-label">住所</label><input class="form-input" id="af-address" type="text" placeholder="例: 東京都渋谷区..."></div>
+                <div class="form-group span2"><label class="form-label">URL</label><input class="form-input" id="af-url" type="url" placeholder="https://..."></div>
+                <div class="form-group span2"><label class="form-label">読取ステータス</label><input class="form-input" id="af-readStatus" type="text" placeholder="例: 読取済み"></div>
             </div>
         </div>
 
@@ -3079,6 +3140,21 @@ function openEditModal(idxOverride){
         document.getElementById('af-amount').value     = (r.amount&&r.amount!=='—') ? r.amount : '';
         document.getElementById('af-value').value      = (r.value&&r.value!=='—') ? r.value : '';
         document.getElementById('af-efficiency').value = r.efficiency || '中';
+        document.getElementById('af-classification').value = r.classification || '';
+        document.getElementById('af-site').value = r.site || '';
+        document.getElementById('af-orCondition').value = r.orCondition || '';
+        document.getElementById('af-ss').value = r.ss || '';
+        document.getElementById('af-ae').value = r.ae || '';
+        document.getElementById('af-reviewer').value = r.reviewer || '';
+        document.getElementById('af-sm').value = r.sm || '';
+        document.getElementById('af-earlyDeadline').value = r.earlyDeadline || '';
+        document.getElementById('af-programDesc').value = r.programDesc || '';
+        document.getElementById('af-keep').value = r.keep || '';
+        document.getElementById('af-problem').value = r.problem || '';
+        document.getElementById('af-try').value = r.try || '';
+        document.getElementById('af-link').value = r.link || '';
+        document.getElementById('af-document').value = r.document || '';
+        document.getElementById('af-docs').value = r.docs || '';
     } else if(r.src==='expo'){
         document.getElementById('af-name2-expo').value    = r.name2 || '';
         document.getElementById('af-role2-expo').value    = r.role2 || '';
@@ -3091,12 +3167,30 @@ function openEditModal(idxOverride){
         document.getElementById('af-budget').value        = r.budget || '未確認';
         document.getElementById('af-timing').value        = r.timing || '未定';
         document.getElementById('af-needs').value         = r.needs || '';
+        document.getElementById('af-scale').value = r.scale || '';
+        document.getElementById('af-respondent').value = r.respondent || '';
+        document.getElementById('af-handover').value = r.handover || '';
+        document.getElementById('af-purpose').value = r.purpose || '';
+        document.getElementById('af-needsDetail').value = r.needsDetail || '';
+        document.getElementById('af-existingTech').value = r.existingTech || '';
+        document.getElementById('af-interestedTech').value = r.interestedTech || '';
+        document.getElementById('af-newTechPlan').value = r.newTechPlan || '';
+        document.getElementById('af-decisionCriteria').value = r.decisionCriteria || '';
+        document.getElementById('af-mailText').value = r.mailText || '';
+        document.getElementById('af-isLead').checked = !!r.isLead;
+        document.getElementById('af-followRequest').checked = !!r.followRequest;
+        document.getElementById('af-mailCreated').checked = !!r.mailCreated;
     } else {
         document.getElementById('af-name2-event').value   = r.name2 || '';
         document.getElementById('af-role2-event').value   = r.role2 || '';
         document.getElementById('af-dept-event').value    = r.dept || '';
         document.getElementById('af-contact-event').value = (r.contact&&r.contact!=='—') ? r.contact : '';
         if(r.cardImage) setCardPreview(r.cardImage);
+        document.getElementById('af-tel').value = r.tel || '';
+        document.getElementById('af-mobile').value = r.mobile || '';
+        document.getElementById('af-address').value = r.address || '';
+        document.getElementById('af-url').value = r.url || '';
+        document.getElementById('af-readStatus').value = r.readStatus || '';
     }
     // C7: focus first input after edit modal populates
     setTimeout(()=>{ const f=document.getElementById('af-name'); if(f) f.focus(); }, 50);
@@ -3142,8 +3236,12 @@ function resetAddForm(){
     // clear inputs
     ['af-name','af-company','af-memo','af-contactDate','af-nextDeadline','af-nextAction','af-amount','af-value',
      'af-name2-expo','af-role2-expo','af-dept-expo','af-contact-expo','af-needs',
-     'af-name2-event','af-role2-event','af-dept-event','af-contact-event'
+     'af-name2-event','af-role2-event','af-dept-event','af-contact-event',
+     'af-classification','af-site','af-orCondition','af-ss','af-ae','af-reviewer','af-sm','af-earlyDeadline','af-programDesc','af-keep','af-problem','af-try','af-link','af-document','af-docs',
+     'af-respondent','af-handover','af-purpose','af-needsDetail','af-existingTech','af-interestedTech','af-newTechPlan','af-decisionCriteria','af-mailText',
+     'af-tel','af-mobile','af-address','af-url','af-readStatus'
     ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    ['af-isLead','af-followRequest','af-mailCreated'].forEach(id=>{ const el=document.getElementById(id); if(el) el.checked=false; });
     cardImageData = null;
     document.getElementById('cardPreviewImg').src = '';
     document.getElementById('cardPreviewWrap').classList.remove('show');
@@ -3227,13 +3325,28 @@ function submitAddForm(){
 
     if(addSrc==='accel'){
         Object.assign(base, {
-            stage:      document.getElementById('af-stage').value,
-            phase:      document.getElementById('af-phase').value,
-            quarter:    document.getElementById('af-quarter').value,
-            amount:     document.getElementById('af-amount').value.trim() || '—',
-            value:      document.getElementById('af-value').value.trim() || '—',
-            efficiency: document.getElementById('af-efficiency').value,
-            contact:    '—',
+            stage:          document.getElementById('af-stage').value,
+            phase:          document.getElementById('af-phase').value,
+            quarter:        document.getElementById('af-quarter').value,
+            amount:         document.getElementById('af-amount').value.trim() || '—',
+            value:          document.getElementById('af-value').value.trim() || '—',
+            efficiency:     document.getElementById('af-efficiency').value,
+            contact:        '—',
+            classification: document.getElementById('af-classification').value.trim() || null,
+            site:           document.getElementById('af-site').value.trim() || null,
+            orCondition:    document.getElementById('af-orCondition').value.trim() || null,
+            ss:             document.getElementById('af-ss').value.trim() || null,
+            ae:             document.getElementById('af-ae').value.trim() || null,
+            reviewer:       document.getElementById('af-reviewer').value.trim() || null,
+            sm:             document.getElementById('af-sm').value.trim() || null,
+            earlyDeadline:  document.getElementById('af-earlyDeadline').value || null,
+            programDesc:    document.getElementById('af-programDesc').value.trim() || null,
+            keep:           document.getElementById('af-keep').value.trim() || null,
+            problem:        document.getElementById('af-problem').value.trim() || null,
+            try:            document.getElementById('af-try').value.trim() || null,
+            link:           document.getElementById('af-link').value.trim() || null,
+            document:       document.getElementById('af-document').value.trim() || null,
+            docs:           document.getElementById('af-docs').value.trim() || null,
         });
     } else if(addSrc==='expo'){
         Object.assign(base, {
@@ -3247,7 +3360,20 @@ function submitAddForm(){
             follow:   document.getElementById('af-follow').value,
             budget:   document.getElementById('af-budget').value,
             timing:   document.getElementById('af-timing').value,
-            needs:    document.getElementById('af-needs').value.trim() || null,
+            needs:             document.getElementById('af-needs').value.trim() || null,
+            scale:             document.getElementById('af-scale').value || null,
+            respondent:        document.getElementById('af-respondent').value.trim() || null,
+            handover:          document.getElementById('af-handover').value.trim() || null,
+            purpose:           document.getElementById('af-purpose').value.trim() || null,
+            needsDetail:       document.getElementById('af-needsDetail').value.trim() || null,
+            existingTech:      document.getElementById('af-existingTech').value.trim() || null,
+            interestedTech:    document.getElementById('af-interestedTech').value.trim() || null,
+            newTechPlan:       document.getElementById('af-newTechPlan').value.trim() || null,
+            decisionCriteria:  document.getElementById('af-decisionCriteria').value.trim() || null,
+            mailText:          document.getElementById('af-mailText').value.trim() || null,
+            isLead:            document.getElementById('af-isLead').checked,
+            followRequest:     document.getElementById('af-followRequest').checked,
+            mailCreated:       document.getElementById('af-mailCreated').checked,
         });
     } else {
         Object.assign(base, {
@@ -3255,7 +3381,12 @@ function submitAddForm(){
             role2:     document.getElementById('af-role2-event').value.trim() || null,
             dept:      document.getElementById('af-dept-event').value.trim() || null,
             contact:   document.getElementById('af-contact-event').value.trim() || '—',
-            cardImage: cardImageData || null,
+            cardImage:  cardImageData || null,
+            tel:        document.getElementById('af-tel').value.trim() || null,
+            mobile:     document.getElementById('af-mobile').value.trim() || null,
+            address:    document.getElementById('af-address').value.trim() || null,
+            url:        document.getElementById('af-url').value.trim() || null,
+            readStatus: document.getElementById('af-readStatus').value.trim() || null,
         });
     }
 
