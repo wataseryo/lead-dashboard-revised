@@ -1095,6 +1095,23 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
             </div>
         </div>
 
+        <!-- 連絡先（共通必須）-->
+        <div class="form-sec">連絡先情報</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">先方の名前<span>*</span></label>
+                <input class="form-input" id="af-name2" type="text" placeholder="例: 山崎 健一">
+            </div>
+            <div class="form-group">
+                <label class="form-label">メールアドレス<span>*</span></label>
+                <input class="form-input" id="af-contact" type="email" placeholder="例: name@company.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">電話番号<span>*</span></label>
+                <input class="form-input" id="af-tel" type="tel" placeholder="例: 03-1234-5678">
+            </div>
+        </div>
+
         <!-- ─── アクセラ専用 ─── -->
         <div id="af-sec-accel">
             <div class="form-sec">アクセラ詳細</div>
@@ -1182,20 +1199,12 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
             <div class="form-sec">担当者情報（名刺）</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">氏名</label>
-                    <input class="form-input" id="af-name2-expo" type="text" placeholder="例: 山崎 健一">
-                </div>
-                <div class="form-group">
                     <label class="form-label">役職</label>
                     <input class="form-input" id="af-role2-expo" type="text" placeholder="例: 部長">
                 </div>
                 <div class="form-group">
                     <label class="form-label">部署</label>
                     <input class="form-input" id="af-dept-expo" type="text" placeholder="例: 情報システム部">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">メール</label>
-                    <input class="form-input" id="af-contact-expo" type="email" placeholder="例: name@company.com">
                 </div>
             </div>
             <div class="form-sec">展示会詳細</div>
@@ -1310,10 +1319,6 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
             <div class="form-sec">担当者情報（名刺から転記）</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">氏名</label>
-                    <input class="form-input" id="af-name2-event" type="text" placeholder="例: 吉田 真一">
-                </div>
-                <div class="form-group">
                     <label class="form-label">役職</label>
                     <input class="form-input" id="af-role2-event" type="text" placeholder="例: 代表">
                 </div>
@@ -1321,14 +1326,9 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
                     <label class="form-label">部署</label>
                     <input class="form-input" id="af-dept-event" type="text" placeholder="例: 事業開発部">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">メール</label>
-                    <input class="form-input" id="af-contact-event" type="email" placeholder="例: name@company.com">
-                </div>
             </div>
             <div class="form-sec">連絡先詳細</div>
             <div class="form-grid">
-                <div class="form-group"><label class="form-label">電話</label><input class="form-input" id="af-tel" type="tel" placeholder="例: 03-1234-5678"></div>
                 <div class="form-group"><label class="form-label">携帯</label><input class="form-input" id="af-mobile" type="tel" placeholder="例: 090-1234-5678"></div>
                 <div class="form-group span2"><label class="form-label">住所</label><input class="form-input" id="af-address" type="text" placeholder="例: 東京都渋谷区..."></div>
                 <div class="form-group span2"><label class="form-label">URL</label><input class="form-input" id="af-url" type="url" placeholder="https://..."></div>
@@ -3126,6 +3126,9 @@ function openEditModal(idxOverride){
     document.getElementById('af-nextAction').value  = r.nextAction || '';
     document.getElementById('af-person').value      = r.person || '田中';
     document.getElementById('af-memo').value        = r.memo || '';
+    document.getElementById('af-name2').value       = r.name2 || '';
+    document.getElementById('af-contact').value     = (r.contact && r.contact !== '—') ? r.contact : '';
+    document.getElementById('af-tel').value         = r.tel || '';
     // role と status はoptions生成後に値セット
     const roleEl = document.getElementById('af-role');
     if([...roleEl.options].some(o=>o.value===r.role)) roleEl.value = r.role;
@@ -3156,10 +3159,8 @@ function openEditModal(idxOverride){
         document.getElementById('af-document').value = r.document || '';
         document.getElementById('af-docs').value = r.docs || '';
     } else if(r.src==='expo'){
-        document.getElementById('af-name2-expo').value    = r.name2 || '';
         document.getElementById('af-role2-expo').value    = r.role2 || '';
         document.getElementById('af-dept-expo').value     = r.dept || '';
-        document.getElementById('af-contact-expo').value  = (r.contact&&r.contact!=='—') ? r.contact : '';
         document.getElementById('af-expo-name').value     = r.expoName || '';
         document.getElementById('af-industry').value      = r.industry || '';
         document.getElementById('af-decision').value      = r.decision || '不明';
@@ -3181,12 +3182,9 @@ function openEditModal(idxOverride){
         document.getElementById('af-followRequest').checked = !!r.followRequest;
         document.getElementById('af-mailCreated').checked = !!r.mailCreated;
     } else {
-        document.getElementById('af-name2-event').value   = r.name2 || '';
         document.getElementById('af-role2-event').value   = r.role2 || '';
         document.getElementById('af-dept-event').value    = r.dept || '';
-        document.getElementById('af-contact-event').value = (r.contact&&r.contact!=='—') ? r.contact : '';
         if(r.cardImage) setCardPreview(r.cardImage);
-        document.getElementById('af-tel').value = r.tel || '';
         document.getElementById('af-mobile').value = r.mobile || '';
         document.getElementById('af-address').value = r.address || '';
         document.getElementById('af-url').value = r.url || '';
@@ -3235,11 +3233,12 @@ function resetAddForm(){
     updateRoleOptions('accel');
     // clear inputs
     ['af-name','af-company','af-memo','af-contactDate','af-nextDeadline','af-nextAction','af-amount','af-value',
-     'af-name2-expo','af-role2-expo','af-dept-expo','af-contact-expo','af-needs',
-     'af-name2-event','af-role2-event','af-dept-event','af-contact-event',
+     'af-name2','af-contact','af-tel',
+     'af-role2-expo','af-dept-expo','af-needs',
+     'af-role2-event','af-dept-event',
      'af-classification','af-site','af-orCondition','af-ss','af-ae','af-reviewer','af-sm','af-earlyDeadline','af-programDesc','af-keep','af-problem','af-try','af-link','af-document','af-docs',
      'af-respondent','af-handover','af-purpose','af-needsDetail','af-existingTech','af-interestedTech','af-newTechPlan','af-decisionCriteria','af-mailText',
-     'af-tel','af-mobile','af-address','af-url','af-readStatus'
+     'af-mobile','af-address','af-url','af-readStatus'
     ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
     ['af-isLead','af-followRequest','af-mailCreated'].forEach(id=>{ const el=document.getElementById(id); if(el) el.checked=false; });
     cardImageData = null;
@@ -3299,11 +3298,14 @@ function updateRoleOptions(src){
 
 function submitAddForm(){
     // validate required
-    const nameEl   = document.getElementById('af-name');
-    const personEl = document.getElementById('af-person');
-    const statusEl = document.getElementById('af-status');
+    const nameEl    = document.getElementById('af-name');
+    const name2El   = document.getElementById('af-name2');
+    const contactEl = document.getElementById('af-contact');
+    const telEl     = document.getElementById('af-tel');
+    const personEl  = document.getElementById('af-person');
+    const statusEl  = document.getElementById('af-status');
     let valid = true;
-    [nameEl].forEach(el=>{ el.classList.remove('err'); if(!el.value.trim()){ el.classList.add('err'); valid=false; } });
+    [nameEl, name2El, contactEl, telEl].forEach(el=>{ el.classList.remove('err'); if(!el.value.trim()){ el.classList.add('err'); valid=false; } });
     if(!valid){ nameEl.focus(); return; }
 
     const name = nameEl.value.trim();
@@ -3320,6 +3322,9 @@ function submitAddForm(){
         contactDate: document.getElementById('af-contactDate').value || '',
         nextDeadline:document.getElementById('af-nextDeadline').value || '',
         nextAction:  document.getElementById('af-nextAction').value.trim(),
+        name2:       document.getElementById('af-name2').value.trim() || null,
+        contact:     document.getElementById('af-contact').value.trim() || '—',
+        tel:         document.getElementById('af-tel').value.trim() || null,
         memo:        document.getElementById('af-memo').value.trim() || null,
     };
 
@@ -3331,7 +3336,6 @@ function submitAddForm(){
             amount:         document.getElementById('af-amount').value.trim() || '—',
             value:          document.getElementById('af-value').value.trim() || '—',
             efficiency:     document.getElementById('af-efficiency').value,
-            contact:        '—',
             classification: document.getElementById('af-classification').value.trim() || null,
             site:           document.getElementById('af-site').value.trim() || null,
             orCondition:    document.getElementById('af-orCondition').value.trim() || null,
@@ -3350,10 +3354,8 @@ function submitAddForm(){
         });
     } else if(addSrc==='expo'){
         Object.assign(base, {
-            name2:    document.getElementById('af-name2-expo').value.trim() || null,
             role2:    document.getElementById('af-role2-expo').value.trim() || null,
             dept:     document.getElementById('af-dept-expo').value.trim() || null,
-            contact:  document.getElementById('af-contact-expo').value.trim() || '—',
             expoName: document.getElementById('af-expo-name').value,
             industry: document.getElementById('af-industry').value,
             decision: document.getElementById('af-decision').value,
@@ -3377,12 +3379,9 @@ function submitAddForm(){
         });
     } else {
         Object.assign(base, {
-            name2:     document.getElementById('af-name2-event').value.trim() || null,
             role2:     document.getElementById('af-role2-event').value.trim() || null,
             dept:      document.getElementById('af-dept-event').value.trim() || null,
-            contact:   document.getElementById('af-contact-event').value.trim() || '—',
             cardImage:  cardImageData || null,
-            tel:        document.getElementById('af-tel').value.trim() || null,
             mobile:     document.getElementById('af-mobile').value.trim() || null,
             address:    document.getElementById('af-address').value.trim() || null,
             url:        document.getElementById('af-url').value.trim() || null,
