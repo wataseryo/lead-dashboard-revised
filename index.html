@@ -1608,24 +1608,18 @@ function updateStatusFilterOptions(){
 
     // 選択肢定義
     const accelStatusOpts = ['進行中','採択！！','失注','辞退','期限切れ'];
-    const accelStageOpts  = ['リード','接触済','提出済','商談化','採択！！'];
     const expoStatusOpts  = ['送付済','アポ取得','失注','返信あり'];
 
     if(hasAccel && !hasExpo){
         // アクセラのみ
-        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">案件状態</span>';
         buttons += accelStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
-        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">ステージ</span>';
-        buttons += accelStageOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
     } else if(hasExpo && !hasAccel){
         // 展示会のみ
         buttons += expoStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
     } else {
         // 全ソース or アクセラ+展示会
-        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">アクセラ 案件状態</span>';
+        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">アクセラ</span>';
         buttons += accelStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
-        buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">アクセラ ステージ</span>';
-        buttons += accelStageOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
         buttons += '<span style="color:var(--muted);font-size:.65rem;align-self:center;padding:0 4px;">展示会</span>';
         buttons += expoStatusOpts.map(v=>`<button class="fb" data-v="${esc(v)}" onclick="toggleStatus(this)">${esc(v)}</button>`).join('');
     }
@@ -1803,10 +1797,10 @@ function render(){
         if(F.sources.length>0 && !F.sources.includes(r.src)) return false;
         // 優先度フィルター（複数選択: 空=全て）
         if(F.prios.length>0 && !F.prios.includes(r.prio)) return false;
-        // ステータスフィルター: アクセラは案件状態またはステージにマッチ、展示会はステータス、イベントはスキップ
+        // ステータスフィルター: アクセラは案件状態にマッチ、展示会はステータス、イベントはスキップ
         if(F.status.length>0){
             if(r.src==='accel'){
-                if(!F.status.includes(r.status) && !F.status.includes(r.stage)) return false;
+                if(!F.status.includes(r.status)) return false;
             } else if(r.src==='expo'){
                 if(!F.status.includes(r.status)) return false;
             }
