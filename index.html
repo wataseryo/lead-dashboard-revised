@@ -455,6 +455,17 @@ textarea.form-input{resize:vertical;min-height:72px;line-height:1.6;}
         </div>
     </div>
 
+    <div class="filter-row">
+        <div class="fl">〆切<div style="font-size:.58rem;color:var(--muted);font-weight:400;margin-top:1px;">単一選択</div></div>
+        <div class="fp" id="f-deadline">
+            <button class="fb on" data-v="" onclick="setDeadlineFilter(this)">すべて</button>
+            <button class="fb" data-v="overdue" onclick="setDeadlineFilter(this)">期限超過</button>
+            <button class="fb" data-v="7days" onclick="setDeadlineFilter(this)">7日以内</button>
+            <button class="fb" data-v="thisMonth" onclick="setDeadlineFilter(this)">今月</button>
+            <button class="fb" data-v="hasDeadline" onclick="setDeadlineFilter(this)">〆切あり</button>
+        </div>
+    </div>
+
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div class="filter-toggle" role="button" tabindex="0" onclick="toggleExtra()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleExtra()">
             <span id="extraIcon">＋</span> <span>詳細フィルター（展示会・アクセラ専用）</span>
@@ -1416,7 +1427,7 @@ function loadFromStorage(){
 loadFromStorage();
 
 // ━━ FILTER STATE ━━
-const F = {sources:[],prios:[],status:[],person:[],expo:[],industry:[],follow:[],decision:[],budget:[],phase:[],quarter:[],timing:[],stage:[],scale:[]};
+const F = {sources:[],prios:[],status:[],person:[],expo:[],industry:[],follow:[],decision:[],budget:[],phase:[],quarter:[],timing:[],stage:[],scale:[],deadlineFilter:''};
 let sortKey = null, sortDir = 1;
 let currentPage = 1;
 const PAGE_SIZE = 50;
@@ -1498,6 +1509,8 @@ function updateDetailFilters(){
 
 function resetAllFilters(){
     ['sources','prios','status','person','expo','industry','follow','decision','budget','phase','quarter','timing','stage','scale'].forEach(k=>{ F[k]=[]; });
+    F.deadlineFilter='';
+    document.querySelectorAll('#f-deadline .fb').forEach(b=>{ b.className = b.dataset.v==='' ? 'fb on' : 'fb'; });
     currentPage = 1;
     document.querySelectorAll('#f-source .fb').forEach(b=>b.className='fb');
     document.querySelectorAll('#f-prio .fb').forEach(b=>b.className='fb');
@@ -1580,6 +1593,10 @@ function updateChips(){
     Object.keys(fKeyLabel).forEach(k=>{
         F[k].forEach(v=>{ h+=`<div class="af-chip">${esc(fKeyLabel[k]+':'+v)}<button onclick="clearOneF('${escJs(k)}','${escJs(v)}')">×</button></div>`; });
     });
+    if(F.deadlineFilter){
+        const dlLabel={'overdue':'期限超過','7days':'7日以内','thisMonth':'今月','hasDeadline':'〆切あり'};
+        h+=`<div class="af-chip">〆切:${esc(dlLabel[F.deadlineFilter]||F.deadlineFilter)}<button onclick="clearDeadlineFilter()">×</button></div>`;
+    }
     c.innerHTML=h;
 }
 
@@ -1595,6 +1612,18 @@ function clearOneF(key, val){
             if(allBtn) allBtn.className = F[key].length===0 ? 'fb on' : 'fb';
         }
     }
+    currentPage=1; updateChips(); render();
+}
+
+function setDeadlineFilter(btn){
+    F.deadlineFilter = btn.dataset.v;
+    document.querySelectorAll('#f-deadline .fb').forEach(b=>{ b.className = b.dataset.v===F.deadlineFilter ? 'fb on' : 'fb'; });
+    currentPage=1; updateChips(); render();
+}
+
+function clearDeadlineFilter(){
+    F.deadlineFilter='';
+    document.querySelectorAll('#f-deadline .fb').forEach(b=>{ b.className = b.dataset.v==='' ? 'fb on' : 'fb'; });
     currentPage=1; updateChips(); render();
 }
 
@@ -1733,6 +1762,17 @@ function render(){
         if(F.timing.length>0&&!F.timing.includes(r.timing)) return false;
         if(F.stage.length>0&&r.src==='accel'&&!F.stage.includes(r.stage)) return false;
         if(F.scale.length>0&&r.src==='expo'&&!F.scale.includes(r.scale)) return false;
+        // 〆切フィルター
+        if(F.deadlineFilter){
+            const today=new Date(); today.setHours(0,0,0,0);
+            const in7=new Date(today); in7.setDate(in7.getDate()+7);
+            const ym=today.toISOString().slice(0,7);
+            const dl=r.nextDeadline;
+            if(F.deadlineFilter==='overdue'){ if(!dl||new Date(dl)>=today) return false; }
+            else if(F.deadlineFilter==='7days'){ if(!dl){ return false; } const d=new Date(dl); if(d<today||d>in7) return false; }
+            else if(F.deadlineFilter==='thisMonth'){ if(!dl||!dl.startsWith(ym)) return false; }
+            else if(F.deadlineFilter==='hasDeadline'){ if(!dl) return false; }
+        }
         // expanded search fields
         if(q&&![r.name,r.company,r.person,r.name2||'',r.email||'',r.dept||'',r.memo||'',r.needs||''].some(s=>s.toLowerCase().includes(q))) return false;
         return true;
